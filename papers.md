@@ -6,5 +6,8 @@
 - Single-cell atlas of early human brain development highlights heterogeneity of human neuroepithelial cells and early radial glia, https://www.nature.com/articles/s41593-020-00794-1
 - Single-cell genomic profiling of human dopamine neurons identifies a population that selectively degenerates in Parkinson’s disease, https://www.nature.com/articles/s41593-022-01061-1
 - A single-cell atlas of the human substantia nigra reveals cell-specific pathways associated with neurological disorders, https://www.nature.com/articles/s41467-020-17876-0
+- Differentially expressed gene networks, biomarkers, long noncoding RNAs, and shared responses with cocaine identifed in the midbrains of human opioid
+abusers, https://www.nature.com/articles/s41598-018-38209-8
+- A chromosomal connectome for psychiatric and metabolic risk variants in adult dopaminergic neurons, https://genomemedicine.biomedcentral.com/articles/10.1186/s13073-020-0715-x 
 - brain atlases, https://portal.brain-map.org/
  

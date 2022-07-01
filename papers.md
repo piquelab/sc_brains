@@ -13,5 +13,6 @@ abusers, https://www.nature.com/articles/s41598-018-38209-8
 - Single-cell transcriptomics and surface epitope detection in human brain epileptic lesions identifies pro-inflammatory signaling, https://www.nature.com/articles/s41593-022-01095-5
 - A shared disease-associated oligodendrocyte signature among multiple CNS pathologies,
 (https://www.nature.com/articles/s41593-022-01104-7)
+- Single-cell transcriptomics and surface epitope detection in human brain epileptic lesions identifies pro-inflammatory signaling, (https://www.nature.com/articles/s41593-022-01095-5)
 - brain atlases, https://portal.brain-map.org/
  

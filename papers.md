@@ -15,5 +15,6 @@ abusers, https://www.nature.com/articles/s41598-018-38209-8
 - A shared disease-associated oligodendrocyte signature among multiple CNS pathologies,
 (https://www.nature.com/articles/s41593-022-01104-7)
 - Single-cell transcriptomics and surface epitope detection in human brain epileptic lesions identifies pro-inflammatory signaling, (https://www.nature.com/articles/s41593-022-01095-5)
+- Type-I-interferon signaling drives microglial dysfunction and senescence in human iPSC models of Down syndrome and Alzheimer’s disease, https://www.sciencedirect.com/science/article/pii/S1934590922002569?dgcid=author#!
 - brain atlases, https://portal.brain-map.org/
  

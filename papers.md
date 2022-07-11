@@ -17,5 +17,9 @@ abusers, https://www.nature.com/articles/s41598-018-38209-8
 - Single-cell transcriptomics and surface epitope detection in human brain epileptic lesions identifies pro-inflammatory signaling, (https://www.nature.com/articles/s41593-022-01095-5)
 - Type-I-interferon signaling drives microglial dysfunction and senescence in human iPSC models of Down syndrome and Alzheimer’s disease, https://www.sciencedirect.com/science/article/pii/S1934590922002569?dgcid=author#!
 - A gene-expression axis defines neuron behaviour, https://www.nature.com/articles/d41586-022-01640-z
-- brain atlases, https://portal.brain-map.org/
+
+### Reference data
+- source website, https://singlecell.broadinstitute.org/single_cell
+- A single-cell atlas of the human substantia nigra reveals cell-specific pathways associated with neurological disorders, https://www.nature.com/articles/s41467-020-17876-0
+- Single-cell genomic profiling of human dopamine neurons identifies a population that selectively degenerates in Parkinson’s disease, https://www.nature.com/articles/s41593-022-01061-1
  

@@ -22,4 +22,6 @@ abusers, https://www.nature.com/articles/s41598-018-38209-8
 - source website, https://singlecell.broadinstitute.org/single_cell
 - A single-cell atlas of the human substantia nigra reveals cell-specific pathways associated with neurological disorders, https://www.nature.com/articles/s41467-020-17876-0
 - Single-cell genomic profiling of human dopamine neurons identifies a population that selectively degenerates in Parkinson’s disease, https://www.nature.com/articles/s41593-022-01061-1
+- Single-Cell Multi-omic Integration Compares and Contrasts Features of Brain Cell Identity, https://www.sciencedirect.com/science/article/pii/S0092867419305045?via%3Dihub
+- Single-cell sequencing of human midbrain reveals glial activation and a Parkinson-specific neuronal state, https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9050543/
  

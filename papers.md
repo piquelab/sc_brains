@@ -20,6 +20,7 @@ abusers, https://www.nature.com/articles/s41598-018-38209-8
 - A chromosomal connectome for psychiatric and metabolic risk variants in adult dopaminergic neurons, https://genomemedicine.biomedcentral.com/articles/10.1186/s13073-020-0715-x
 - Genetics of the human microglia regulome refines Alzheimer’s disease risk loci, https://www.nature.com/articles/s41588-022-01149-1
 - Single-cell genomics identifies cell type–specific molecular changes in autism, https://www.science.org/doi/full/10.1126/science.aav8130
+- Transcriptional risk scores link GWAS to eQTLs and predict complications in Crohn's disease, https://www.nature.com/articles/ng.3936
 
 ### Reference data
 - source website, https://singlecell.broadinstitute.org/single_cell

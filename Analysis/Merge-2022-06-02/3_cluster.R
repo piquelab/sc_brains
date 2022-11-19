@@ -67,7 +67,7 @@ print(object.size(sc), units="Gb")
 ####
 #### adjust resolution
 sc <- read_rds("./3_cluster.outs/1_seurat.cluster14.rds")
-
+ 
 mycol2 <- c("0"="#a6cee3", "1"="#1f78b4", "2"="#b2df8a", "3"="#33a02c",
    "4"="#fb9a99", "5"="#e31a1c", "6"="#fdbf6f", "7"="#ff7f00", "8"="#cab2d6",
     "9"="#6a3d9a","10"="#ffff99", "11"="#b15928") #, "12"="#8dd3c7", "13"="#8e0152", "14"="#d9d9d9")
@@ -104,56 +104,65 @@ x2%>%pivot_wider(id_cols=seurat_clusters, ,names_from=Category, values_from=perc
 ### UMAP plot ###
 #################
 
-sc <- read_rds("./3_cluster.outs/1_seurat.cluster.rds")
+## sc <- read_rds("./3_cluster.outs/1_seurat.cluster.rds")
 
-## ##
-## mycol1 <- c("0"="#8dd3c7", "1"="#ffffb3", "2"="#bebada", "3"="#fb8072",
-##   "4"="#80b1d3", "5"="#fdb462", "6"="#b3de69", "7"="#fccde5", "8"="#d9d9d9",
-##   "9"="#bc80bd", "10"="#ccebc5", "11"="#ffed6f")
+## ## ##
+## ## mycol1 <- c("0"="#8dd3c7", "1"="#ffffb3", "2"="#bebada", "3"="#fb8072",
+## ##   "4"="#80b1d3", "5"="#fdb462", "6"="#b3de69", "7"="#fccde5", "8"="#d9d9d9",
+## ##   "9"="#bc80bd", "10"="#ccebc5", "11"="#ffed6f")
 
 ## mycol2 <- c("0"="#a6cee3", "1"="#1f78b4", "2"="#b2df8a", "3"="#33a02c",
 ##    "4"="#fb9a99", "5"="#e31a1c", "6"="#fdbf6f", "7"="#ff7f00", "8"="#cab2d6",
 ##     "9"="#6a3d9a","10"="#ffff99", "11"="#b15928", "12"="#8dd3c7", "13"="#8e0152", "14"="#d9d9d9") 
 
-p0 <- DimPlot(sc, reduction="umap", cols=mycol2, label=T, repel=T, pt.size=0.5)+
-    theme_bw()
-figfn <- "./3_cluster.outs/Figure1.0_cluster.png"
-png(figfn, width=520, height=480, res=120)
-p0
-dev.off()
+## p0 <- DimPlot(sc, reduction="umap", cols=mycol2, label=T, repel=T, pt.size=0.5)+
+##     theme_bw()
+## figfn <- "./3_cluster.outs/Figure1.0_cluster.png"
+## png(figfn, width=520, height=480, res=120)
+## p0
+## dev.off()
 
+col_MCls <- c("ODC"="#fb8072", "Astrocyte"="#b3de69", "Microglia"="#bebada", "OPC"="#8dd3c7",
+   "Non_DA"="#fdb462",  "Pericyte"="#ffffb3", "DA"="#80b1d3", "Endothelial"="#fccde5",
+    "T-cell"="#35978f", "Ependymal"="#828282")
 
 ## sc2 <- read_rds("./3_cluster.outs/1_seurat.cluster.rds")
-umap <- as.data.frame(sc[["umap"]]@cell.embeddings)
-x <- sc@meta.data
-x <- x%>%mutate(Batch=ifelse(grepl("AKB", sampleID), "Bannon", "Mash"))
-                            
+umap <- as.data.frame(sc[["umap"]]@cell.embeddings)%>%rownames_to_column(var="NEW_BARCODE")
+
+meta <- sc@meta.data
+meta <- meta%>%mutate(Batch=ifelse(grepl("AKB", sampleID), "Bannon", "Mash"))
+
+x <- read.csv("BrainCV_cell.counts.final.csv")%>%filter(USE==1)%>%
+    dplyr::select(sampleID, Category)
+
+meta <- meta%>%inner_join(x, by="sampleID")
+
  
-df2 <- data.frame(UMAP_1=umap[,1],
-   UMAP_2=umap[,2],
-   seurat_clusters=x$seurat_clusters, Batch=x$Batch)
-###
-p <- ggplot(df2, aes(x=UMAP_1, y=UMAP_2, colour=factor(seurat_clusters)))+
+df2 <- meta%>%dplyr::select(Batch, Category, NEW_BARCODE, celltype)%>%inner_join(umap, by="NEW_BARCODE")
+
+## ###
+p <- ggplot(df2, aes(x=UMAP_1, y=UMAP_2, colour=factor(celltype)))+
    rasterise(geom_point(size=0.1),dpi=300)+
-   scale_colour_manual(values=mycol2,
+   scale_colour_manual(values=col_MCls,
        guide=guide_legend(override.aes=list(size=2, ncol=1)))+
+   facet_wrap(~factor(Batch), ncol=2)+ 
    ## guides(col=guide_legend(override.aes=list(size=2), ncol=1))+
    theme_bw()+
    theme(legend.title=element_blank(),
          legend.background=element_blank(),
          legend.box.background=element_blank(),
-         legend.key.size=grid::unit(1,"lines"))
+         legend.key.size=grid::unit(1,"lines"), strip.text=element_text(size=14))
 ###
-figfn <- paste(outdir, "Figure1.1_cluster.png", sep="")
-png(figfn, width=520, height=480, res=120)
+figfn <- paste("./3_cluster.outs/", "Figure1.1_cluster.png", sep="")
+png(figfn, width=900, height=480, res=120)
 p
 dev.off()
 
 
 ### umap plot split by batch
-p2 <- ggplot(df2, aes(x=UMAP_1, y=UMAP_2, colour=factor(seurat_clusters)))+
+p2 <- ggplot(df2, aes(x=UMAP_1, y=UMAP_2, colour=factor(Category)))+
    rasterise(geom_point(size=0.1),dpi=300)+
-       scale_colour_manual(values=mycol2,
+       scale_colour_manual(values=c("Control"="#4575b4", "Opioid"="#d73027"),                 
           guide=guide_legend(override.aes=list(size=2, ncol=1)))+
    ## guides(col=guide_legend(override.aes=list(size=2), ncol=1))+
    facet_wrap(~factor(Batch), ncol=2)+
@@ -164,8 +173,8 @@ p2 <- ggplot(df2, aes(x=UMAP_1, y=UMAP_2, colour=factor(seurat_clusters)))+
          legend.key.size=grid::unit(1,"lines"),
          strip.text=element_text(size=14))
 ###
-figfn <- paste(outdir, "Figure1.2_cluster.png", sep="")
-png(figfn, width=800, height=480, res=120)
+figfn <- paste("./3_cluster.outs/", "Figure1.2_cluster_treat.png", sep="")
+png(figfn, width=900, height=480, res=120)
 p2
 dev.off()
 
@@ -416,7 +425,7 @@ dev.off()
 ################################################################
 #### summary number of cells in clusters for each individual ###
 ################################################################
-
+ 
 sc <- read_rds("./3_cluster.outs/1_seurat.cluster14.rds")
 
 x <- sc@meta.data
@@ -597,3 +606,6 @@ dev.off()
 ## png("./3_cluster.outs/Figure4.0_heatmap.png", width=700, height=600, res=120)
 ## print(p1)
 ## dev.off()
+
+
+

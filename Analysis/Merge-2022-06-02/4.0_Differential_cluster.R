@@ -6,10 +6,11 @@ library(annotables)
 library(biobroom)
 library(Seurat)
 library(cowplot)
+library(viridis)
 ##
 rm(list=ls())
 
-outdir <- "./4.0_Diff.cluster.outs/Filter2_cells30_M3/"
+outdir <- "./4.0_Diff.cluster.outs/Filter2_cells30_M2_batch/"
 if (!file.exists(outdir)) dir.create(outdir, showWarnings=F)
 
 ###
@@ -29,7 +30,13 @@ if (!file.exists(outdir)) dir.create(outdir, showWarnings=F)
 sc <- read_rds("./3_cluster.outs/1_seurat.cluster14.rds")
 
 ## counts data
-counts <- sc@assays$RNA@counts
+## counts <- sc@assays$RNA@counts
+## meta <- sc@meta.data
+## cellSel <- meta%>%filter(seurat_clusters==0)%>%pull(NEW_BARCODE)
+## count2 <- counts[,cellSel]
+## rnz <- rowSums(count2)
+## sum(rnz>20) ## try 0, 50, 100
+
 
 anno <- data.frame(rn=rownames(counts), rnz=rowSums(counts))%>%filter(rnz>0)
     
@@ -103,6 +110,21 @@ meta2 <- meta%>%left_join(x3, by="sampleID")
 dd <- meta2%>%group_by(seurat_clusters, Category)%>%summarise(ny=n(),.groups="drop")
 dd%>%pivot_wider(names_from=Category, values_from=ny, values_fill=0)%>%as.data.frame()
 
+### data used for final data analysis
+## fn <- "BrainCV_cell.counts.final.csv"
+## cv <- read.csv(fn)%>%dplyr::filter(USE==1)
+
+## x <- sc@meta.data
+## x2 <- x%>%group_by(sampleID)%>%summarise(ncell=n(),.groups="drop")%>%as.data.frame()
+
+## ncell <- x2$ncell
+## names(ncell) <- as.character(x2$sampleID) 
+## cv$n <- ncell[as.character(cv$sampleID)]
+
+## opfn <- "BrainCV_cell_counts_final_USE_JW.xlsx"
+## openxlsx::write.xlsx(cv, opfn, overwrite=T)
+
+
 
 
 ##############################
@@ -134,20 +156,20 @@ cvt <- cvt%>%left_join(x, by="sampleID")%>%
 ## cvt_summ <- cvt%>%group_by(MCls, Category)%>%summarise(n=n(),.groups="drop")%>%
 ##   pivot_wider(names_from=Category, values_from=n)
 
-cvt_summ2 <- cvt%>%group_by(MCls, Library, Category)%>%summarise(n=n(),.groups="drop")%>%
-    mutate(comb=paste(MCls, Library, sep="_"))%>%
-    pivot_wider(id_cols=comb, names_from=Category, values_from=n, values_fill=0)%>%as.data.frame()
+## cvt_summ2 <- cvt%>%group_by(MCls, Library, Category)%>%summarise(n=n(),.groups="drop")%>%
+##     mutate(comb=paste(MCls, Library, sep="_"))%>%
+##     pivot_wider(id_cols=comb, names_from=Category, values_from=n, values_fill=0)%>%as.data.frame()
 
 
 ## cvt_summ2 <- cvt%>%filter(MCls=="6")%>%group_by(Library, Category)%>%summarise(n=n(),.groups="drop")%>%
 ##     pivot_wider(id_cols=Library, names_from=Category, values_from=n, values_fill=0)%>%as.data.frame()
 
 ## ###
-cvt_summ2 <- cvt_summ2%>%
-    mutate(MCls=gsub("_.*", "", comb), Library=gsub(".*_", "", comb))%>%
-    dplyr::select(MCls, Library, Control, Opioid)
+## cvt_summ2 <- cvt_summ2%>%
+##     mutate(MCls=gsub("_.*", "", comb), Library=gsub(".*_", "", comb))%>%
+##     dplyr::select(MCls, Library, Control, Opioid)
 
-tmp <- cvt_summ2%>%filter(MCls==6) ## Control==0|Opioid==0)
+## tmp <- cvt_summ2%>%filter(MCls==6) ## Control==0|Opioid==0)
 
 ## openxlsx::write.xlsx(cvt_summ2, "./4.0_Diff.cluster.outs/Filter2_cells30_M2_batch/0_summary.xlsx", overwrite=T)
 
@@ -182,10 +204,10 @@ res <- lapply(MCls, function(ii){
 
    if ( length(unique(cvt0$Sex))>1){
        dds <- try(DESeqDataSetFromMatrix(YtX0, cvt0,
-          ~Category+factor(Data_source)+as.numeric(Age)+as.numeric(pH)+as.numeric(PC1)+as.numeric(PC2)+as.numeric(PC3)+factor(Sex) ))
+          ~Category+factor(Library)+as.numeric(Age)+as.numeric(pH)+as.numeric(PC1)+as.numeric(PC2)+as.numeric(PC3)+factor(Sex) ))
    }else{
        dds <- try(DESeqDataSetFromMatrix(YtX0, cvt0,
-          ~Category+factor(Data_source)+as.numeric(Age)+as.numeric(pH)+as.numeric(PC1)+as.numeric(PC2)+as.numeric(PC3) ))
+          ~Category+factor(Library)+as.numeric(Age)+as.numeric(pH)+as.numeric(PC1)+as.numeric(PC2)+as.numeric(PC3) ))
    }    
    dds <- try(DESeq(dds))
    if ( (class(dds)!="try-error") ){
@@ -210,7 +232,7 @@ res <- res[!is.na(res)]
 res <- do.call(rbind,res)
 
 ##
-opfn <- paste(outdir, "1.2_DESeq.results_CPM0.5_filter.rds", sep="")
+opfn <- paste(outdir, "1.4_DESeq.results_CPM0.5_filter.rds", sep="")
 write_rds(res, opfn)
 
 
@@ -361,16 +383,37 @@ ypos <- min1+a*R
 }
 
 
-###
-### plot data    
+
+#####################################################
+### set parameters that are required in the plots ###
+#####################################################
+
+### current color
+col_MCls <- c("ODC"="#fb8072", "Astrocyte"="#92cd2d", "Microglia"="#c38dc4", "OPC"="#35978f",
+   "Non_DA"="#fc9016",  "Pericyte"="#bebada", "DA"="#80b1d3", "Endothelial"="#fccde5",
+    "T-cell"="#8dd3c7",  "Ependymal"="#828282")
+
+### mapping cluster to cell-type
+MCls_name <- c("0"="ODC", "1"="Astrocyte", "2"="Microglia", "3"="OPC",
+     "4"="Non_DA", "6"="Pericyte", "7"="DA", "8"="Endothelial", "9"="T-cell", "12"="Ependymal")
+
+### order of cell-type 
+MCls_val <- c("ODC"=1, "OPC"=2, "Astrocyte"=3, "Microglia"=4, "DA"=5, "Non_DA"=6, 
+    "Pericyte"=7, "Endothelial"=8, "T-cell"=9, "Ependymal"=10)
+
+
+
+#################
+### plot data ###
+#################
+
+## results from old bulk
 fn <- "/wsu/home/groups/bannonlab/manal/DESeq2_WGCNA_DownstreamAnalysis/Final_Runs/DESEQ2_TEST_3-28-18/DESEQ2_IHW-5-28-18.csv"
 old <- read.csv(fn)%>%drop_na(pvalue)%>%mutate(zscore_old=log2FoldChange/lfcSE)%>%    
    dplyr::select(gene=Associated.Gene.Name, beta_old=log2FoldChange, zscore_old, pval_old=pvalue) 
 
-###
-outdir <- "./4.0_Diff.cluster.outs/Filter2_cells30_M3/"
-## outdir <- "./4.0_Diff.cluster.outs/Filter2_cells30_M2_batch/"
-fn <- paste(outdir, "1.2_DESeq.results_CPM0.5_filter.rds", sep="")
+### results from sc
+fn <- "./4.0_Diff.cluster.outs/Filter2_cells30_M2_batch/1.4_DESeq.results_CPM0.5_filter.rds"
 res2 <- read_rds(fn)%>%drop_na(p.value)%>%
    mutate(zscore_sc=estimate/stderror)%>%
    dplyr::select(MCls, gene, beta_sc=estimate, zscore_sc, pval_sc=p.value)
@@ -382,106 +425,118 @@ plotDF <- res2%>%inner_join(old, by="gene")
 ### scatter plots of zscore between sc-brain and bulk
 
 plotDF2 <- plotDF%>%dplyr::select(MCls, gene, x=zscore_sc, y=zscore_old)%>%
-    mutate(MCls_value=as.numeric(MCls),
-           ## MCls_label=paste("Cluster", MCls),
-           MCls=fct_reorder(MCls, MCls_value))
- 
-anno_df1 <- plotDF2%>%group_by(MCls)%>%
+    mutate(celltype=MCls_name[as.character(MCls)],
+           MCls_value=as.numeric(MCls_val[as.character(celltype)]),
+           celltype2=fct_reorder(celltype, MCls_value))
+
+###
+### annotation data frame
+anno_df1 <- plotDF2%>%group_by(celltype)%>%
    nest()%>%
    mutate(corr=map(data, ~cor.test((.x)$x, (.x)$y, method="pearson")),
           eq=map(corr,feq),
           r2=map_dbl(corr,~(.x)$estimate),
           xpos=map_dbl(data,~xFun(.x,a=0.5)),
           ypos=map_dbl(data,~yFun(.x,a=0.98)))%>%
-   dplyr::select(-data,-corr)
+   dplyr::select(-data,-corr)%>%unnest(celltype)
 
 anno_df1 <- anno_df1%>%
-    mutate(MCls_value=as.numeric(MCls),
-           ## MCls_label=paste("Cluster", MCls),
-           MCls=fct_reorder(MCls, MCls_value))
+    mutate(MCls_value=as.numeric(MCls_val[as.character(celltype)]),
+           celltype2=fct_reorder(celltype, MCls_value))
 
-fig1 <- ggplot(plotDF2, aes(x=x, y=y))+
-   geom_point(size=0.3, color="grey50")+ 
-   geom_text(data=anno_df1, aes(x=xpos, y=ypos, label=eq), colour="blue", size=3, parse=T)+ 
-   facet_wrap(~MCls, ncol=3, scales="free",
-          labeller=as_labeller(c("0"="0:ODC", "1"="1:astrocyte", "2"="2:microglia", "3"="3:OPC", "4"="4:GABA",
-   "6"="6:pericyte", "7"="7:DaN", "8"="8:endothelial", "9"="9:T-cells")))+         
-   scale_x_continuous("zscore from sc-brain", expand=expansion(mult=0.1))+
-   scale_y_continuous("zscore from bulk", expand=expansion(mult=0.15))+
+###
+### main figures
+fig1 <- ggplot(plotDF2, aes(x=x, y=y))+ ## fill=factor(celltype)))+
+   ##geom_point(size=0.3)+
+   stat_density_2d(aes(fill=..level..), geom="polygon")+ 
+   geom_text(data=anno_df1, aes(x=xpos, y=ypos, label=eq), colour="blue", size=3, parse=T)+
+   scale_fill_viridis(option="C")+ 
+   ##scale_fill_manual(values=col_MCls, guide="none")+
+   facet_wrap(~celltype2, nrow=2, ncol=4, scales="free")+         
+   scale_x_continuous("z-score from different cell-types in sc-brain", expand=expansion(mult=0.1))+
+   scale_y_continuous("z-score from Bulk", expand=expansion(mult=0.15))+
    theme_bw()+
-   theme(strip.text=element_text(size=12),
-         axis.title=element_text(size=12))
+   theme(legend.title=element_blank(),
+         legend.position=c(0.9, 0.25),
+         legend.key.size=grid::unit(0.8, "lines"),
+         strip.text=element_text(size=12))
+   
 fig1 <- fig1+geom_smooth(method="lm",formula=y~x, size=0.5, se=F, color="red")
                            
-figfn <- paste(outdir, "Figure2.4_score_bulk.png", sep="")
-png(filename=figfn, width=750, height=900, res=120)  
+figfn <- paste(outdir, "Figure4.4_score_SCvsBulk.png", sep="")
+png(figfn, width=880, height=500, res=120)
 print(fig1)
 dev.off()
 
-
-
 ###
 ###
 
-fn <- "./4.0_Diff.cluster.outs/Filter2_cells30_M1_no/1.0_DESeq.results.rds"
-old <- read_rds(fn)%>%drop_na(p.value)%>%
-   mutate(zscore_old=estimate/stderror, MCls_gene=paste(MCls, gene, sep="_"))%>%    
-   dplyr::select(MCls_gene, zscore_old) 
+## fn <- "./4.0_Diff.cluster.outs/Filter2_cells30_M1_no/1.0_DESeq.results.rds"
+## old <- read_rds(fn)%>%drop_na(p.value)%>%
+##    mutate(zscore_old=estimate/stderror, MCls_gene=paste(MCls, gene, sep="_"))%>%    
+##    dplyr::select(MCls_gene, zscore_old) 
 
-### 
-outdir <- "./4.0_Diff.cluster.outs/Filter2_cells30_M2_batch/"
-fn <- paste(outdir, "1.0_DESeq.results.rds", sep="")
-res2 <- read_rds(fn)%>%drop_na(p.value)%>%
-   mutate(zscore_sc=estimate/stderror, MCls_gene=paste(MCls, gene, sep="_"))%>%
-   dplyr::select(MCls, gene,  MCls_gene, zscore_sc)
+## ### 
+## outdir <- "./4.0_Diff.cluster.outs/Filter2_cells30_M2_batch/"
+## fn <- paste(outdir, "1.0_DESeq.results.rds", sep="")
+## res2 <- read_rds(fn)%>%drop_na(p.value)%>%
+##    mutate(zscore_sc=estimate/stderror, MCls_gene=paste(MCls, gene, sep="_"))%>%
+##    dplyr::select(MCls, gene,  MCls_gene, zscore_sc)
 
-plotDF <- res2%>%inner_join(old, by="MCls_gene")
+## plotDF <- res2%>%inner_join(old, by="MCls_gene")
 
 
-###
-### scatter plots of zscore between sc-brain and bulk
+## ###
+## ### scatter plots of zscore between sc-brain and bulk
 
-plotDF2 <- plotDF%>%dplyr::select(MCls, gene, MCls_gene, x=zscore_old, y=zscore_sc)%>%
-    mutate(MCls_value=as.numeric(MCls),
-           MCls_label=paste("Cluster", MCls),
-           MCls_label=fct_reorder(MCls_label, MCls_value))
+## plotDF2 <- plotDF%>%dplyr::select(MCls, gene, MCls_gene, x=zscore_old, y=zscore_sc)%>%
+##     mutate(MCls_value=as.numeric(MCls),
+##            MCls_label=paste("Cluster", MCls),
+##            MCls_label=fct_reorder(MCls_label, MCls_value))
  
-anno_df1 <- plotDF2%>%group_by(MCls)%>%
-   nest()%>%
-   mutate(corr=map(data, ~cor.test((.x)$x, (.x)$y, method="pearson")),
-          eq=map(corr,feq),
-          r2=map_dbl(corr,~(.x)$estimate),
-          xpos=map_dbl(data,~xFun(.x,a=0.5)),
-          ypos=map_dbl(data,~yFun(.x,a=0.98)))%>%
-   dplyr::select(-data,-corr)
+## anno_df1 <- plotDF2%>%group_by(MCls)%>%
+##    nest()%>%
+##    mutate(corr=map(data, ~cor.test((.x)$x, (.x)$y, method="pearson")),
+##           eq=map(corr,feq),
+##           r2=map_dbl(corr,~(.x)$estimate),
+##           xpos=map_dbl(data,~xFun(.x,a=0.5)),
+##           ypos=map_dbl(data,~yFun(.x,a=0.98)))%>%
+##    dplyr::select(-data,-corr)
 
-anno_df1 <- anno_df1%>%
-    mutate(MCls_value=as.numeric(MCls),
-           MCls_label=paste("Cluster", MCls),
-           MCls_label=fct_reorder(MCls_label, MCls_value))
+## anno_df1 <- anno_df1%>%
+##     mutate(MCls_value=as.numeric(MCls),
+##            MCls_label=paste("Cluster", MCls),
+##            MCls_label=fct_reorder(MCls_label, MCls_value))
 
-fig1 <- ggplot(plotDF2, aes(x=x, y=y))+
-   geom_point(size=0.3, color="grey50")+ 
-   geom_text(data=anno_df1, aes(x=xpos, y=ypos, label=eq), colour="blue", size=3, parse=T)+ 
-   facet_wrap(~MCls_label, ncol=3, scales="free")+         
-   scale_x_continuous("zscore of model w/o library", expand=expansion(mult=0.1))+
-   scale_y_continuous("zscore from w/. library", expand=expansion(mult=0.15))+
-   theme_bw()+
-   theme(strip.text=element_text(size=12),
-         axis.title=element_text(size=12))
-fig1 <- fig1+geom_smooth(method="lm",formula=y~x, size=0.5, se=F, color="red")
+## fig1 <- ggplot(plotDF2, aes(x=x, y=y))+
+##    geom_point(size=0.3, color="grey50")+ 
+##    geom_text(data=anno_df1, aes(x=xpos, y=ypos, label=eq), colour="blue", size=3, parse=T)+ 
+##    facet_wrap(~MCls_label, ncol=3, scales="free")+         
+##    scale_x_continuous("zscore of model w/o library", expand=expansion(mult=0.1))+
+##    scale_y_continuous("zscore from w/. library", expand=expansion(mult=0.15))+
+##    theme_bw()+
+##    theme(strip.text=element_text(size=12),
+##          axis.title=element_text(size=12))
+## fig1 <- fig1+geom_smooth(method="lm",formula=y~x, size=0.5, se=F, color="red")
                            
-figfn <- paste(outdir, "Figure2.1_score_Model_2vs1.png", sep="")
-png(filename=figfn, width=750, height=900, res=120)  
-print(fig1)
-dev.off()
+## figfn <- paste(outdir, "Figure2.1_score_Model_2vs1.png", sep="")
+## png(filename=figfn, width=750, height=900, res=120)  
+## print(fig1)
+## dev.off()
 
 
+###
+###
+fn <-  "./4.0_Diff.cluster.outs/Filter2_cells30_M2_batch/1.4_DESeq.results_CPM0.5_filter.rds"
+res <- read_rds(fn)
 
+summ <- res%>%group_by(MCls)%>%
+   summarise(ntest=sum(!is.na(estimate)),
+             ntest_q=sum(!is.na(p.adjusted)), n_na=sum(is.na(p.adjusted)), .groups="drop")%>%
+   ungroup()
 
-
-
-
+opfn <- "./4.0_Diff.cluster.outs/Filter2_cells30_M2_batch/2_summary_qc.xlsx"
+openxlsx::write.xlsx(summ, file=opfn, overwrite=T)
 ### scatter plots of log2FoldChange
 
 ## plotDF2 <- plotDF%>%dplyr::select(MCls, gene, x=beta_sc, y=beta_old)%>%
@@ -523,66 +578,120 @@ dev.off()
 ###
 ### scatter plots of pvalue between sc-brain and previous bulk
 
-plotDF2 <- plotDF%>%dplyr::select(MCls, gene, x=pval_sc, y=pval_old)%>%
-    mutate(MCls_value=as.numeric(MCls),
-           MCls_label=paste("Cluster", MCls),
-           MCls_label=fct_reorder(MCls_label, MCls_value))
+## plotDF2 <- plotDF%>%dplyr::select(MCls, gene, x=pval_sc, y=pval_old)%>%
+##     mutate(MCls_value=as.numeric(MCls),
+##            MCls_label=paste("Cluster", MCls),
+##            MCls_label=fct_reorder(MCls_label, MCls_value))
 
-fig1 <- ggplot(plotDF2, aes(x=-log10(x), y=-log10(y)))+
-   geom_point(size=0.3, color="grey50")+ 
-   geom_abline(slope=1, intercept=0, color="red")+
-   facet_wrap(~MCls_label, ncol=3, scales="free")+         
-   scale_x_continuous(bquote(~Log[10]~" pvalue from sc-brain"), expand=expansion(mult=0.1))+
-   scale_y_continuous(bquote(~Log[10]~" pvalue from bulk"), expand=expansion(mult=0.15))+
-   theme_bw()+
-   theme(strip.text=element_text(size=12),
-         axis.title=element_text(size=12))
+## fig1 <- ggplot(plotDF2, aes(x=-log10(x), y=-log10(y)))+
+##    geom_point(size=0.3, color="grey50")+ 
+##    geom_abline(slope=1, intercept=0, color="red")+
+##    facet_wrap(~MCls_label, ncol=3, scales="free")+         
+##    scale_x_continuous(bquote(~Log[10]~" pvalue from sc-brain"), expand=expansion(mult=0.1))+
+##    scale_y_continuous(bquote(~Log[10]~" pvalue from bulk"), expand=expansion(mult=0.15))+
+##    theme_bw()+
+##    theme(strip.text=element_text(size=12),
+##          axis.title=element_text(size=12))
 
                            
-figfn <- paste(outdir, "Figure2.2_pval_bulk.png", sep="")
-png(filename=figfn, width=750, height=900, res=120)  
-print(fig1)
-dev.off()
+## figfn <- paste(outdir, "Figure2.2_pval_bulk.png", sep="")
+## png(filename=figfn, width=750, height=900, res=120)  
+## print(fig1)
+## dev.off()
 
 
 ################################
 #### forest plots of 10 DEGs ###
 ################################
  
-fn <- paste(outdir, "1.4_DESeq.results_CPM0.5_filter.rds", sep="")
-res <- read_rds(fn)%>%drop_na(p.value)
+## fn <- paste(outdir, "1.4_DESeq.results_CPM0.5_filter.rds", sep="")
+## res <- read_rds(fn)%>%drop_na(p.value)
  
-DEGlist <- c("PLA1A", "MAP3K6", "YBX3", "FOSL2", "MGP", "MEFV", "CISH", "PDLIM1", "GPR4", "TRIP10")
-res2 <- res%>%filter(gene%in%DEGlist)%>%
-   dplyr::select(gene, beta=estimate, SE=stderror, MCls, p.adjusted)
+## DEGlist <- c("PLA1A", "MAP3K6", "YBX3", "FOSL2", "MGP", "MEFV", "CISH", "PDLIM1", "GPR4", "TRIP10")
+## res2 <- res%>%filter(gene%in%DEGlist)%>%
+##    dplyr::select(gene, beta=estimate, SE=stderror, MCls, p.adjusted)
 
 
-mycol2 <- c("0"="#a6cee3", "1"="#1f78b4", "2"="#b2df8a", "3"="#33a02c",
-   "4"="#fb9a99", "5"="#e31a1c", "6"="#fdbf6f", "7"="#ff7f00", "8"="#cab2d6",
-    "9"="#6a3d9a","10"="#ffff99", "11"="#b15928", "not_DEG"="grey40") #, "12"="#8dd3c7", "13"="#8e0152", "14"="#d9d9d9")
+## mycol2 <- c("0"="#a6cee3", "1"="#1f78b4", "2"="#b2df8a", "3"="#33a02c",
+##    "4"="#fb9a99", "5"="#e31a1c", "6"="#fdbf6f", "7"="#ff7f00", "8"="#cab2d6",
+##     "9"="#6a3d9a","10"="#ffff99", "11"="#b15928", "not_DEG"="grey40") #, "12"="#8dd3c7", "13"="#8e0152", "14"="#d9d9d9")
  
-plotDF <- res2%>%
-   mutate(beta_upper=beta+1.96*SE, beta_lower=beta-1.96*SE,
-          gr2=ifelse(p.adjusted<0.1&abs(beta)>0.25, as.character(MCls), "not_DEG"))
+## plotDF <- res2%>%
+##    mutate(beta_upper=beta+1.96*SE, beta_lower=beta-1.96*SE,
+##           gr2=ifelse(p.adjusted<0.1&abs(beta)>0.25, as.character(MCls), "not_DEG"))
 
-p <- ggplot(plotDF, aes(x=beta, y=factor(MCls), color=factor(gr2)))+
-   geom_errorbarh(aes(xmax=beta_upper, xmin=beta_lower), size=0.5, height=0.2)+
-   geom_point(shape=19, size=1.5)+
-   scale_colour_manual(values=mycol2)+
-   xlab("Log2FoldChange")+
-   scale_y_discrete("",
-      labels=c("0"="0:ODC", "1"="1:astrocyte", "2"="2:microglia", "3"="3:OPC", "4"="4:GABA",
-               "6"="6:pericyte", "7"="7:DaN", "8"="8:endothelial", "9"="9:T-cells"))+
-   geom_vline(xintercept=0, size=0.25, linetype="dashed")+
-   facet_wrap(~factor(gene), ncol=5, scales="free")+
-   theme_bw()+
-   theme(legend.position="none")
+## p <- ggplot(plotDF, aes(x=beta, y=factor(MCls), color=factor(gr2)))+
+##    geom_errorbarh(aes(xmax=beta_upper, xmin=beta_lower), size=0.5, height=0.2)+
+##    geom_point(shape=19, size=1.5)+
+##    scale_colour_manual(values=mycol2)+
+##    xlab("Log2FoldChange")+
+##    scale_y_discrete("",
+##       labels=c("0"="0:ODC", "1"="1:astrocyte", "2"="2:microglia", "3"="3:OPC", "4"="4:GABA",
+##                "6"="6:pericyte", "7"="7:DaN", "8"="8:endothelial", "9"="9:T-cells"))+
+##    geom_vline(xintercept=0, size=0.25, linetype="dashed")+
+##    facet_wrap(~factor(gene), ncol=5, scales="free")+
+##    theme_bw()+
+##    theme(legend.position="none")
                            
-figfn <- paste(outdir, "Figure4.5_forestplot.png", sep="")
-png(filename=figfn, width=1200, height=600, res=120)  
-print(p)
-dev.off()
+## figfn <- paste(outdir, "Figure4.5_forestplot.png", sep="")
+## png(filename=figfn, width=1200, height=600, res=120)  
+## print(p)
+## dev.off()
    
+
+
+##############################
+#### Plots for publication ###
+##############################
+
+
+## outdir <- "./4.0_Diff.cluster.outs/plots_pub/"
+## if (!file.exists(outdir)) dir.create(outdir, showWarnings=F)
+
+## fn <-  "./4.0_Diff.cluster.outs/Filter2_cells30_M2_batch/1.4_DESeq.results_CPM0.5_filter.rds"
+## res <- read_rds(fn)
+ 
+
+## col_MCls <- c("ODC"="#fb8072", "Astrocyte"="#b3de69", "Microglia"="#bebada", "OPC"="#8dd3c7",
+##    "Non_DA"="#fdb462",  "Pericyte"="#ffffb3", "DA"="#80b1d3", "Endothelial"="#fccde5",
+##     "T-cell"="#35978f", "Ependymal"="#828282")
+## MCls_name <- c("0"="ODC", "1"="Astrocyte", "2"="Microglia", "3"="OPC",
+##      "4"="Non_DA", "6"="Pericyte", "7"="DA", "8"="Endothelial", "9"="T-cell", "12"="Ependymal")
+## MCls_val <- c("ODC"=0, "Astrocyte"=1, "Microglia"=2, "OPC"=3, "Non_DA"=4, "Pericyte"=6)
+
+## ### DEGs
+## res2 <- res%>%dplyr::filter(p.adjusted<0.1, abs(estimate)>0.25)%>%
+##    mutate(direction=ifelse(estimate>0, 2, 1), celltype=MCls_name[as.character(MCls)])
+
+
+## sigs <- res2%>%group_by(celltype, direction)%>%
+##        summarise(ny=n(), .groups="drop")%>%
+##        mutate(ny2=ifelse(direction==1, -ny, ny))%>%as.data.frame()
+## sigs <- sigs%>%mutate(MCls_value=as.numeric(MCls_val[celltype]),
+##                       celltype2=fct_reorder(celltype, MCls_value))
+
+## breaks_value <- pretty(c(-1100, 1100), 5)
+
+## p <- ggplot(sigs, aes(x=celltype2, y=ny2))+
+##    geom_bar(aes(fill=factor(celltype), alpha=factor(direction)), stat="identity")+
+##    scale_fill_manual(values=col_MCls)+
+##    scale_alpha_manual(values=c("1"=0.5, "2"=1))+
+##    geom_hline(yintercept=0, color="grey60")+
+##    geom_text(aes(x=celltype, y=ny2, label=abs(ny2),
+##        vjust=ifelse(direction==2, -0.2, 1.2)), size=2.8)+
+##    scale_y_continuous("", breaks=breaks_value, limits=c(-1150,1150), labels=abs(breaks_value))+
+##    theme_bw()+
+##    theme(legend.position="none",
+##          axis.title=element_blank(),
+##          axis.text=element_text(size=10))
+
+## ###
+## figfn <- paste(outdir, "Figure1.1_barplot.png", sep="")
+## png(filename=figfn, width=580, height=400, res=120)
+## print(p)
+## dev.off()
+
+
 
 
 

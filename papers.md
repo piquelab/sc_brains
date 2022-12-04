@@ -25,6 +25,7 @@ abusers, https://www.nature.com/articles/s41598-018-38209-8
 - Genetic variants associated with psychiatric disorders are enriched at epigenetically active sites in lymphoid cells, [
 https://www.nature.com/articles/s41467-022-33885-7.epdf?sharing_token=3EtK6vDH-xSjv5BvBRDRy9RgN0jAjWel9jnR3ZoTv0O2tdzBqyJTYd2Pelop43WTI4wxhmgaXCraJCvhUKILQEoatlmWFhjHAGZbQeXycwlrOTXbktm1kCgkomAmPx-CBx_fByESeOy6r1-Cb4BVyRbyGY0-Oe10ansepr9RTFc%3D
 - Building Transformers from Neurons and Astrocytes, https://www.biorxiv.org/content/10.1101/2022.10.12.511910v1
+- Single-Cell RNA-Seq Uncovers a Robust Transcriptional Response to Morphine by Glia
 
 ### Reference data
 - source website, https://singlecell.broadinstitute.org/single_cell

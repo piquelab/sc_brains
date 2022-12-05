@@ -26,6 +26,10 @@ abusers, https://www.nature.com/articles/s41598-018-38209-8
 https://www.nature.com/articles/s41467-022-33885-7.epdf?sharing_token=3EtK6vDH-xSjv5BvBRDRy9RgN0jAjWel9jnR3ZoTv0O2tdzBqyJTYd2Pelop43WTI4wxhmgaXCraJCvhUKILQEoatlmWFhjHAGZbQeXycwlrOTXbktm1kCgkomAmPx-CBx_fByESeOy6r1-Cb4BVyRbyGY0-Oe10ansepr9RTFc%3D
 - Building Transformers from Neurons and Astrocytes, https://www.biorxiv.org/content/10.1101/2022.10.12.511910v1
 - Single-Cell RNA-Seq Uncovers a Robust Transcriptional Response to Morphine by Glia
+- Genome-Wide Association Study of Opioid Cessation, 
+- Genome-wide association study in individuals of European and
+African ancestry and multi-trait analysis of opioid use disorder
+identifies 19 independent genome-wide significant risk loci
 
 ### Reference data
 - source website, https://singlecell.broadinstitute.org/single_cell

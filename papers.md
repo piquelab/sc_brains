@@ -28,6 +28,8 @@ https://www.nature.com/articles/s41467-022-33885-7.epdf?sharing_token=3EtK6vDH-x
 - Single-Cell RNA-Seq Uncovers a Robust Transcriptional Response to Morphine by Glia, https://www.cell.com/cell-reports/pdf/S2211-1247(18)31384-6.pdf
 - Genome-Wide Association Study of Opioid Cessation, 
 - Genome-wide association study in individuals of European and African ancestry and multi-trait analysis of opioid use disorder identifies 19 independent genome-wide significant risk loci
+- Genetic diversity fuels gene discovery for tobacco and alcohol use, https://www.nature.com/articles/s41586-022-05477-4
+
 
 ### Reference data
 - source website, https://singlecell.broadinstitute.org/single_cell

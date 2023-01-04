@@ -29,6 +29,7 @@ https://www.nature.com/articles/s41467-022-33885-7.epdf?sharing_token=3EtK6vDH-x
 - Genome-Wide Association Study of Opioid Cessation, 
 - Genome-wide association study in individuals of European and African ancestry and multi-trait analysis of opioid use disorder identifies 19 independent genome-wide significant risk loci
 - Genetic diversity fuels gene discovery for tobacco and alcohol use, https://www.nature.com/articles/s41586-022-05477-4
+- HIV integration in the human brain is linked to microglial activation and 3D genome remodeling, https://www.sciencedirect.com/science/article/pii/S1097276522011054?via%3Dihub
 
 
 ### Reference data

@@ -33,7 +33,8 @@ https://www.nature.com/articles/s41467-022-33885-7.epdf?sharing_token=3EtK6vDH-x
 - Multi-ancestry transcriptome-wide association analyses yield insights into tobacco use biology and drug repurposing, 
 https://www.nature.com/articles/s41588-022-01282-x
 - Comparative single cell epigenomic analysis of gene regulatory programs in the rodent and primate neocortex, https://www.biorxiv.org/content/10.1101/2023.04.08.536119v1
-- Multivariate genome-wide association meta-analysis of over 1 million subjects identifies loci underlying multiple substance use disorders, https://www.medrxiv.org/content/10.1101/2022.01.06.22268753v1
+- Multivariate genome-wide association meta-analysis of over 1 million subjects identifies loci underlying multiple substance use disorders, 
+https://www.nature.com/articles/s44220-023-00034-y
 
 
 ### Reference data

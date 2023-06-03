@@ -32,6 +32,11 @@ https://www.nature.com/articles/s41467-022-33885-7.epdf?sharing_token=3EtK6vDH-x
 - HIV integration in the human brain is linked to microglial activation and 3D genome remodeling, https://www.sciencedirect.com/science/article/pii/S1097276522011054?via%3Dihub
 - Multi-ancestry transcriptome-wide association analyses yield insights into tobacco use biology and drug repurposing, 
 https://www.nature.com/articles/s41588-022-01282-x
+- Comparative single cell epigenomic analysis of gene regulatory programs in the rodent and primate neocortex, https://www.biorxiv.org/content/10.1101/2023.04.08.536119v1
+- Multivariate genome-wide association meta-analysis of over 1 million subjects identifies loci underlying multiple substance use disorders, 
+https://www.nature.com/articles/s44220-023-00034-y
+- RNA alternative splicing impacts the risk for alcohol use disorder, https://www.nature.com/articles/s41380-023-02111-1.epdf?sharing_token=BWzhKOc4ww7klx8PsNP2zdRgN0jAjWel9jnR3ZoTv0N3ZOZwtHMnwCPRVF2UQFKCfQPYh32Y3IP3c8HNmAmBT20m8oHMHRN0X5MGmUVwGFgPuK8SHCw6IY6uVPy0KEaZTBMuFdfazE0oRMSrqq0Pw4--lg4BCUgX7w7QtaAEyYU%3D
+- Oligodendrocyte heterogeneity in the mouse juvenile and adult central nervous system, https://www.science.org/doi/10.1126/science.aaf6463
 
 ### Reference data
 - source website, https://singlecell.broadinstitute.org/single_cell

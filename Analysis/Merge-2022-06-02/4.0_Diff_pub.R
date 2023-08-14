@@ -12,12 +12,13 @@ library(cowplot)
 library(ggrepel)
 library(ggtext, lib.loc="/wsu/home/ha/ha21/ha2164/Bin/Rpackages/")
 library(glue)
+library(openxlsx)
 
 ##
 
 rm(list=ls())
 
-outdir <- "./4.0_Diff.cluster.outs/plots_pub/"
+outdir <- "./4.0_Diff.cluster.outs/Correct_results/plots_pub/"
 if (!file.exists(outdir)) dir.create(outdir, showWarnings=F)
 
 
@@ -92,12 +93,20 @@ MCls_val <- c("ODC"=1, "OPC"=2, "Astrocyte"=3, "Microglia"=4, "DA"=5, "Non_DA"=6
     "Pericyte"=7, "Endothelial"=8, "T-cell"=9, "Ependymal"=10)
 
 
-fn <-  "./4.0_Diff.cluster.outs/Filter2_cells30_M2_batch/1.4_DESeq.results_CPM0.5_filter.rds"
-res <- read_rds(fn)%>%mutate(celltype=MCls_name[as.character(MCls)])
+## fn <-  "./4.0_Diff.cluster.outs/Filter2_cells30_M2_batch/1.4_DESeq.results_CPM0.5_filter.rds"
+## res <- read_rds(fn)%>%mutate(celltype=MCls_name[as.character(MCls)])
+fn <- "./4.0_Diff.cluster.outs/Correct_results/Filter2_default/1_DESeq_results_default.rds"
+res <- read_rds(fn)
 
 
 ### DEGs
 res2 <- res%>%dplyr::filter(p.adjusted<0.1, abs(estimate)>0.25)
+
+###
+plot_data <- res2%>%dplyr::select(gene, celltype)
+opfn <- paste(outdir, "TableS_Figure2_UpSet.xlsx", sep="")
+write.xlsx(plot_data, file=opfn)
+
 
 celltypes <- sort(unique(res2$celltype))
 geneList <- lapply(celltypes, function(ii){
@@ -305,8 +314,11 @@ MCls_val <- c("ODC"=1, "OPC"=2, "Astrocyte"=3, "Microglia"=4, "DA"=5, "Non_DA"=6
 ###
 ### plot data
 
-fn <-  "./4.0_Diff.cluster.outs/Filter2_cells30_M2_batch/1.4_DESeq.results_CPM0.5_filter.rds"
-res <- read_rds(fn)%>%drop_na(p.value)%>%as.data.frame()
+## fn <-  "./4.0_Diff.cluster.outs/Filter2_cells30_M2_batch/1.4_DESeq.results_CPM0.5_filter.rds"
+## res <- read_rds(fn)%>%drop_na(p.value)%>%as.data.frame()
+fn <- "./4.0_Diff.cluster.outs/Correct_results/Filter2_default/1_DESeq_results_default.rds"
+res <- read_rds(fn)%>%drop_na(p.value)
+
 
 
 ###
@@ -409,9 +421,12 @@ MCls_val <- c("ODC"=1, "OPC"=2, "Astrocyte"=3, "Microglia"=4, "DA"=5, "Non_DA"=6
 
 
 ### sc results
-fn <-  "./4.0_Diff.cluster.outs/Filter2_cells30_M2_batch/1.4_DESeq.results_CPM0.5_filter.rds"
-res <- read_rds(fn)%>%drop_na(p.value)%>%
-   mutate(celltype=MCls_name[as.character(MCls)])%>%as.data.frame()
+fn <- "./4.0_Diff.cluster.outs/Correct_results/Filter2_default/1_DESeq_results_default.rds"
+res <- read_rds(fn)%>%drop_na(p.value)
+
+## fn <-  "./4.0_Diff.cluster.outs/Filter2_cells30_M2_batch/1.4_DESeq.results_CPM0.5_filter.rds"
+## res <- read_rds(fn)%>%drop_na(p.value)%>%
+##    mutate(celltype=MCls_name[as.character(MCls)])%>%as.data.frame()
 ###
 res2 <- res%>%dplyr::select(gene, zscore_sc=statistic, MCls, celltype)
 
@@ -435,9 +450,9 @@ comb <- res2%>%inner_join(old2, by="gene")
 plotDF <- comb%>%group_by(celltype)%>%
    nest()%>%
    mutate(corr=map(data, ~cor.test((.x)$zscore_sc, (.x)$zscore_bulk, method="pearson")),
-          eq=map(corr,feq), r2=map_dbl(corr,~(.x)$estimate))%>%
+          eq=map(corr,feq), r2=map_dbl(corr,~(.x)$estimate), pval=map_dbl(corr, ~(.x)$p.value))%>%
    dplyr::select(-data,-corr)%>%as.data.frame()
-
+ 
 plotDF <- plotDF%>%
     mutate(MCl_value=as.numeric(MCls_val[as.character(celltype)]),
            celltype2=fct_reorder(celltype, MCl_value))
@@ -521,11 +536,14 @@ MCls_val <- c("ODC"=1, "OPC"=2, "Astrocyte"=3, "Microglia"=4, "DA"=5, "Non_DA"=6
 ## Mycol2 <- c(col_MCls, "Bulk"="grey40", c("0"="#fb8072", "1"="#b3de69", "2"="#bebada", "3"="#8dd3c7",
 ##    "4"="#fdb462",  "6"="#ffffb3", "7"="#80b1d3", "8_Bulk"="#ca0020",
 ##    "not_DEG"="grey40")
-
  
-fn <-  "./4.0_Diff.cluster.outs/Filter2_cells30_M2_batch/1.4_DESeq.results_CPM0.5_filter.rds"
-res <- read_rds(fn)%>%drop_na(p.value)%>%as.data.frame()%>%
-   mutate(celltype=MCls_name[as.character(MCls)])
+## fn <-  "./4.0_Diff.cluster.outs/Filter2_cells30_M2_batch/1.4_DESeq.results_CPM0.5_filter.rds"
+## res <- read_rds(fn)%>%drop_na(p.value)%>%as.data.frame()%>%
+##    mutate(celltype=MCls_name[as.character(MCls)])
+
+
+fn <- "./4.0_Diff.cluster.outs/Correct_results/Filter2_default/1_DESeq_results_default.rds"
+res <- read_rds(fn)%>%drop_na(p.value)
 
 
 ###
@@ -568,9 +586,10 @@ my_plotDF <- function(plotDF){
        
 
 
-#######################################
-### previous DEGs reproted in paper ###
-#######################################
+#############################################################################################
+### 16 genes including  10 previous DEGs reproted in paper and 6 new genes Mike suggested ###
+#############################################################################################
+
 
  
 DEGlist <- c("PLA1A", "MAP3K6", "YBX3", "FOSL2", "MGP", "MEFV", "CISH", "PDLIM1", "GPR4", "TRIP10",
@@ -621,64 +640,102 @@ dev.off()
 
 
 
-######################
-### Mike suggested ###
-######################
+###
+### source data
 
-DEGlist <- c("IL4R", "CDKN1A", "CCL2", "NFKBIA", "MIR210HG", "A2M")
+plotDF2 <- plotDF2%>%
+   mutate(p.adjusted=ifelse(is.na(p.adjusted), 1, p.adjusted),
+          celltypeNew=gsub("_", " ", celltype),
+          ##celltypeNew=ifelse(p.adjusted<0.1&abs(beta)>0, glue("<b>{celltype}"), glue("<i>{celltype}")),
+          MCls_value=as.numeric(MCls_val[as.character(celltype)]),
+          ##celltypeNew2=fct_reorder(celltypeNew, MCls_value),
+          beta_upper=beta+1.96*SE,
+          beta_lower=beta-1.96*SE)
+
+opfn <- paste(outdir, "TableS_Figure4_forestplot.txt", sep="")
+write.table(plotDF2, opfn, row.names=F, col.names=T, quote=F, sep="\t")
+
+
+
+#########################################################################
+### select top 10 genes by p-value in sc but not significant in bulk  ###
+#########################################################################
+
+
+DEG_sc <- res%>%dplyr::filter(p.adjusted<0.1, abs(estimate)>0.25)%>%dplyr::pull(gene)%>%unique()
+DEG_old <- old%>%dplyr::filter(padj<0.1)%>%pull(gene)%>%unique()
+DEG_unq <- setdiff(DEG_sc, DEG_old)
+
+
+### top 10 DEGs
+DEG_top <- res%>%dplyr::filter(gene%in%DEG_unq)%>%
+    group_by(gene)%>%
+    slice_max(order_by=abs(statistic), n=1)%>%ungroup()%>%
+    arrange(desc(abs(statistic)))%>%pull(gene)%>%unique()
+DEGlist <- DEG_top[1:10]
+
 
 ###
 res2 <- res%>%filter(gene%in%DEGlist)%>%
-   dplyr::select(gene, beta=estimate, SE=stderror, p.adjusted, celltype)%>%
-   mutate(p.adjusted=ifelse(is.na(p.adjusted), 1, p.adjusted),
-          celltypeNew=ifelse(p.adjusted<0.1&abs(beta)>0.25,
-                             glue("<b>{celltype}"), glue("<i>{celltype}")))
-
-old2 <- old%>%filter(gene%in%DEGlist)%>%mutate(celltype="Bulk")%>%
-   dplyr::select(gene, beta=log2FoldChange, SE=lfcSE, p.adjusted=padj, celltype)%>%
-   mutate(p.adjusted=ifelse(is.na(p.adjusted), 1, p.adjusted),
-          celltypeNew=ifelse(p.adjusted<0.1&abs(beta)>0,
-                             glue("<b>{celltype}"), glue("<i>{celltype}")))
-
-plotDF <- rbind(res2, old2)
+   dplyr::select(gene, beta=estimate, SE=stderror, p.adjusted, celltype)
 
 ###
-plotDF2 <- plotDF%>%
-   mutate(MCls_value=as.numeric(MCls_val[as.character(celltype)]),
-          celltypeNew2=fct_reorder(celltypeNew, MCls_value))
-plotDF2 <- plotDF2%>%mutate(beta_upper=beta+1.96*SE, beta_lower=beta-1.96*SE)
+old2 <- old%>%filter(gene%in%DEGlist)%>%mutate(celltype="Bulk")%>%
+   dplyr::select(gene, beta=log2FoldChange, SE=lfcSE, p.adjusted=padj, celltype)
+
+
+
+###
+plotDF <- rbind(res2, old2)
+plotDF2 <- my_plotDF(plotDF)
+
+plotDF2 <- plotDF2%>%
+   mutate(p.adjusted=ifelse(is.na(p.adjusted), 1, p.adjusted),
+          celltypeNew=ifelse(p.adjusted<0.1&abs(beta)>0, glue("<b>{celltype}"), glue("<i>{celltype}")),
+          MCls_value=as.numeric(MCls_val[as.character(celltype)]),
+          celltypeNew2=fct_reorder(celltypeNew, MCls_value),
+          beta_upper=beta+1.96*SE,
+          beta_lower=beta-1.96*SE)
 
 
 ###
 ### main
 p1 <- ggplot(plotDF2, aes(x=beta, y=factor(celltypeNew2), color=factor(celltype)))+
-   geom_errorbarh(aes(xmax=beta_upper, xmin=beta_lower), size=0.5, height=0.2)+
-   geom_point(shape=19, size=1.5)+
+   geom_point(shape=19, size=1.5, na.rm=T)+    
+   geom_errorbarh(aes(xmax=beta_upper, xmin=beta_lower), size=0.5, height=0.2, na.rm=T)+
    scale_colour_manual(values=col_MCls, guide="none")+
-   xlab("Log2FoldChange")+ 
+   xlab("Log2FoldChange")+
+   ##scale_y_discrete(breaks=c("ODC", "OPC", "Astrocyte", "Microglia", "DA", "Non_DA", "Pericyte", "Bulk"))+ 
    geom_vline(xintercept=0, size=0.25, linetype="dashed")+
-   facet_wrap(~factor(gene), nrow=2, ncol=3, scales="free")+
+   facet_wrap(~factor(gene), ncol=5, scales="free")+
    theme_bw()+
    theme(strip.text=element_text(size=12),
          axis.title.y=element_blank(),
-         axis.text.y=element_markdown())
-                           
+         ##axis.text.x=element_text(size=8),
+         axis.text.y=element_markdown(),
+         plot.margin=unit(c(0.1, 0.5, 0.1, 0.1), "cm"))
+
+  
 figfn <- paste(outdir, "Figure4.1_forestplot.png", sep="")
-png(filename=figfn, width=800, height=600, res=120)  
+png(filename=figfn, width=1100, height=500, res=120)  
 print(p1)
 dev.off()
 
 
-####################
-### top 10 genes ###
-####################
 
 
+###
+### TWAS
 
-### top 10 DEGs
-DEG_sc <- res%>%dplyr::filter(p.adjusted<0.1, abs(estimate)>0.25)%>%dplyr::pull(gene)%>%unique()
-DEG_old <- old%>%dplyr::filter(padj<0.1)%>%pull(gene)%>%unique()
-DEG_unq <- setdiff(DEG_sc, DEG_old)
+fn <- "/wsu/home/groups/bannonlab/sc_brains/Analysis/TWAS/1_TWAS.outs/1_TWAS_traits.xlsx"
+df <- openxlsx::read.xlsx(fn)
+fn <- "/wsu/home/groups/bannonlab/sc_brains/Analysis/TWAS/1_TWAS.outs/traits.xlsx"
+trait_DF <- openxlsx::read.xlsx(fn)%>%dplyr::select(traits, Relevant)
+df <- df%>%left_join(trait_DF, by="traits")%>%filter(Relevant==1)
+twas_gene <- unique(df$SYMBOL)
+
+DEG_unq <- intersect(setdiff(DEG_sc, DEG_old), twas_gene)
+
 
 DEG_top <- res%>%dplyr::filter(gene%in%DEG_unq)%>%
     group_by(gene)%>%
@@ -689,51 +746,61 @@ DEGlist <- DEG_top[1:10]
 
 ###
 res2 <- res%>%filter(gene%in%DEGlist)%>%
-   dplyr::select(gene, beta=estimate, SE=stderror, p.adjusted, celltype)%>%
-   mutate(p.adjusted=ifelse(is.na(p.adjusted), 1, p.adjusted),
-          celltypeNew=ifelse(p.adjusted<0.1&abs(beta)>0.25,
-                             glue("<b>{celltype}"), glue("<i>{celltype}")))
-
-old2 <- old%>%filter(gene%in%DEGlist)%>%mutate(celltype="Bulk")%>%
-   dplyr::select(gene, beta=log2FoldChange, SE=lfcSE, p.adjusted=padj, celltype)%>%
-   mutate(p.adjusted=ifelse(is.na(p.adjusted), 1, p.adjusted),
-          celltypeNew=ifelse(p.adjusted<0.1&abs(beta)>0,
-                             glue("<b>{celltype}"), glue("<i>{celltype}")))
-
-plotDF <- rbind(res2, old2)
+   dplyr::select(gene, beta=estimate, SE=stderror, p.adjusted, celltype)
 
 ###
-plotDF2 <- plotDF%>%
-   mutate(MCls_value=as.numeric(MCls_val[as.character(celltype)]),
-          celltypeNew2=fct_reorder(celltypeNew, MCls_value))
-plotDF2 <- plotDF2%>%mutate(beta_upper=beta+1.96*SE, beta_lower=beta-1.96*SE)
+old2 <- old%>%filter(gene%in%DEGlist)%>%mutate(celltype="Bulk")%>%
+   dplyr::select(gene, beta=log2FoldChange, SE=lfcSE, p.adjusted=padj, celltype)
+
+
+
+###
+plotDF <- rbind(res2, old2)
+plotDF2 <- my_plotDF(plotDF)
+
+plotDF2 <- plotDF2%>%
+   mutate(p.adjusted=ifelse(is.na(p.adjusted), 1, p.adjusted),
+          celltypeNew=ifelse(p.adjusted<0.1&abs(beta)>0, glue("<b>{celltype}"), glue("<i>{celltype}")),
+          MCls_value=as.numeric(MCls_val[as.character(celltype)]),
+          celltypeNew2=fct_reorder(celltypeNew, MCls_value),
+          beta_upper=beta+1.96*SE,
+          beta_lower=beta-1.96*SE)
 
 
 ###
 ### main
 p2 <- ggplot(plotDF2, aes(x=beta, y=factor(celltypeNew2), color=factor(celltype)))+
-   geom_errorbarh(aes(xmax=beta_upper, xmin=beta_lower), size=0.5, height=0.2)+
-   geom_point(shape=19, size=1.5)+
+   geom_point(shape=19, size=1.5, na.rm=T)+    
+   geom_errorbarh(aes(xmax=beta_upper, xmin=beta_lower), size=0.5, height=0.2, na.rm=T)+
    scale_colour_manual(values=col_MCls, guide="none")+
-   xlab("Log2FoldChange")+ 
+   xlab("Log2FoldChange")+
+   ##scale_y_discrete(breaks=c("ODC", "OPC", "Astrocyte", "Microglia", "DA", "Non_DA", "Pericyte", "Bulk"))+ 
    geom_vline(xintercept=0, size=0.25, linetype="dashed")+
-   facet_wrap(~factor(gene), nrow=2, ncol=5, scales="free")+
+   facet_wrap(~factor(gene), ncol=5, scales="free")+
    theme_bw()+
    theme(strip.text=element_text(size=12),
          axis.title.y=element_blank(),
-         axis.text.y=element_markdown())
-                           
+         ##axis.text.x=element_text(size=8),
+         axis.text.y=element_markdown(),
+         plot.margin=unit(c(0.1, 0.5, 0.1, 0.1), "cm"))
+  
 figfn <- paste(outdir, "Figure4.2_forestplot.png", sep="")
-png(filename=figfn, width=1250, height=600, res=120)  
+png(filename=figfn, width=1100, height=500, res=120)  
 print(p2)
 dev.off()
 
 
+### 
+## x <- df%>%filter(SYMBOL%in%DEGlist)%>%arrange(SYMBOL)
 
 
-###################
-#### TWAS genes ###
-###################
+
+
+
+
+#####################################
+#### TWAS genes for each category ###
+#####################################
 
 fn <- "/wsu/home/groups/bannonlab/sc_brains/Analysis/TWAS/1_TWAS.outs/1_TWAS_traits.xlsx"
 df <- openxlsx::read.xlsx(fn)
@@ -741,107 +808,463 @@ fn <- "/wsu/home/groups/bannonlab/sc_brains/Analysis/TWAS/1_TWAS.outs/traits.xls
 trait_DF <- openxlsx::read.xlsx(fn)%>%dplyr::select(traits, Relevant)
 df <- df%>%left_join(trait_DF, by="traits")%>%filter(Relevant==1)
 
-###
-category <- sort(unique(df$category))
- 
-geneDF <- NULL
-for (ii in category){
-   ##
-   df2 <- df%>%filter(category==ii)%>%dplyr::select(gene=SYMBOL, zscore) 
-   ##
-   res2 <- res%>%dplyr::filter(p.adjusted<0.1, abs(estimate)>0.25, gene%in%unique(df2$gene)) 
-   res3 <- res2%>%group_by(gene)%>%
-      slice_max(order_by=abs(statistic), n=1)%>%ungroup()%>%
-      arrange(desc(abs(statistic)))%>%dplyr::select(gene, beta=estimate, zscore=statistic, celltype)
-   ##
-   if ( nrow(res3)>6){
-      ##
-      tmp <- res3[1:6,]
-   }else{
-       tmp <- res3
-   }
-   tmp$category <- ii
-    
-   geneDF <- rbind(geneDF, tmp)
-    
-}
+##
+## gene list, significant in SC but not in bulk and also related to traits of interest
+## DEG_unq
 
 
 ###
-### main figures
-category <- sort(unique(geneDF$category))
+### category ADHD
+ii <- "ADHD"
+geneSel <- df%>%filter(SYMBOL%in%DEG_unq, category==ii)%>%pull(SYMBOL)%>%unique()
 
-for (ii in category){
-
-cat(ii, "\n")    
-DEGlist <- geneDF%>%filter(category==ii)%>%pull(gene)    
 ###
-res2 <- res%>%filter(gene%in%DEGlist)%>%
-   dplyr::select(gene, beta=estimate, SE=stderror, p.adjusted, celltype)%>%
-   mutate(p.adjusted=ifelse(is.na(p.adjusted), 1, p.adjusted),
-          celltypeNew=ifelse(p.adjusted<0.1&abs(beta)>0.25,
-                             glue("<b>{celltype}"), glue("<i>{celltype}")))
+res2 <- res%>%filter(gene%in%geneSel)%>%
+   dplyr::select(gene, beta=estimate, SE=stderror, p.adjusted, celltype)
 
-old2 <- NULL    
-if ( sum(DEGlist%in%old$gene)!=0){    
-old2 <- old%>%filter(gene%in%DEGlist)%>%mutate(celltype="Bulk")%>%
-   dplyr::select(gene, beta=log2FoldChange, SE=lfcSE, p.adjusted=padj, celltype)%>%
-   mutate(p.adjusted=ifelse(is.na(p.adjusted), 1, p.adjusted),
-          celltypeNew=ifelse(p.adjusted<0.1&abs(beta)>0,
-                             glue("<b>{celltype}"), glue("<i>{celltype}")))
-}
+###
+old2 <- old%>%filter(gene%in%geneSel)%>%mutate(celltype="Bulk")%>%
+   dplyr::select(gene, beta=log2FoldChange, SE=lfcSE, p.adjusted=padj, celltype)
+
+
+
+###
 plotDF <- rbind(res2, old2)
+plotDF2 <- my_plotDF(plotDF)
 
-###
-plotDF2 <- plotDF%>%
-   mutate(MCls_value=as.numeric(MCls_val[as.character(celltype)]),
-          celltypeNew2=fct_reorder(celltypeNew, MCls_value))
-plotDF2 <- plotDF2%>%mutate(beta_upper=beta+1.96*SE, beta_lower=beta-1.96*SE)
+plotDF2 <- plotDF2%>%
+   mutate(p.adjusted=ifelse(is.na(p.adjusted), 1, p.adjusted),
+          celltypeNew=ifelse(p.adjusted<0.1&abs(beta)>0, glue("<b>{celltype}"), glue("<i>{celltype}")),
+          MCls_value=as.numeric(MCls_val[as.character(celltype)]),
+          celltypeNew2=fct_reorder(celltypeNew, MCls_value),
+          beta_upper=beta+1.96*SE,
+          beta_lower=beta-1.96*SE)
 
 
 ###
 ### main
 p3 <- ggplot(plotDF2, aes(x=beta, y=factor(celltypeNew2), color=factor(celltype)))+
-   geom_errorbarh(aes(xmax=beta_upper, xmin=beta_lower), size=0.5, height=0.2)+
-   geom_point(shape=19, size=1.5)+
+   geom_point(shape=19, size=1.5, na.rm=T)+    
+   geom_errorbarh(aes(xmax=beta_upper, xmin=beta_lower), size=0.5, height=0.2, na.rm=T)+
    scale_colour_manual(values=col_MCls, guide="none")+
-   xlab("Log2FoldChange")+ 
+   xlab("Log2FoldChange")+
+   ##scale_y_discrete(breaks=c("ODC", "OPC", "Astrocyte", "Microglia", "DA", "Non_DA", "Pericyte", "Bulk"))+ 
    geom_vline(xintercept=0, size=0.25, linetype="dashed")+
-   facet_wrap(~factor(gene), nrow=1, scales="free")+
+   facet_wrap(~factor(gene), ncol=3, scales="free")+
    theme_bw()+
    theme(strip.text=element_text(size=12),
          axis.title.y=element_blank(),
+         ##axis.text.x=element_text(size=8),
          axis.text.y=element_markdown())
+         ##plot.margin=unit(c(0.1, 0.5, 0.1, 0.1), "cm"))
+  
+figfn <- paste(outdir, "Figure4.3_", ii, "_forestplot.png", sep="")
+png(filename=figfn, width=600, height=280, res=120)  
+print(p3)
+dev.off()
 
 
-figfn <- paste(outdir, "Figure4.3_", ii, "_forestplot.png", sep="")    
-ngene <- length(DEGlist)
-##    
-if ( ngene==1){    
-   png(filename=figfn, width=300, height=300, res=120)  
-   print(p3)
-   dev.off()
-}else if ( ngene==2){
-   png(filename=figfn, width=500, height=300, res=120)  
-   print(p3)
-   dev.off()    
-}else if ( ngene==5){
-   png(filename=figfn, width=1000, height=300, res=120)  
-   print(p3)
-   dev.off()
-}else{
-   png(filename=figfn, width=1300, height=300, res=120)  
-   print(p3)
-   dev.off()
-}
-    
 ###
-}  ### End
+### parkinson
+
+ii <- "parkinson"
+geneSel <- df%>%filter(SYMBOL%in%DEG_unq, category==ii)%>%pull(SYMBOL)%>%unique()
+
+###
+res2 <- res%>%filter(gene%in%geneSel)%>%
+   dplyr::select(gene, beta=estimate, SE=stderror, p.adjusted, celltype)
+
+###
+old2 <- old%>%filter(gene%in%geneSel)%>%mutate(celltype="Bulk")%>%
+   dplyr::select(gene, beta=log2FoldChange, SE=lfcSE, p.adjusted=padj, celltype)
+
+
+
+###
+plotDF <- rbind(res2, old2)
+plotDF2 <- my_plotDF(plotDF)
+
+plotDF2 <- plotDF2%>%
+   mutate(p.adjusted=ifelse(is.na(p.adjusted), 1, p.adjusted),
+          celltypeNew=ifelse(p.adjusted<0.1&abs(beta)>0, glue("<b>{celltype}"), glue("<i>{celltype}")),
+          MCls_value=as.numeric(MCls_val[as.character(celltype)]),
+          celltypeNew2=fct_reorder(celltypeNew, MCls_value),
+          beta_upper=beta+1.96*SE,
+          beta_lower=beta-1.96*SE)
+
+
+###
+### main
+p3 <- ggplot(plotDF2, aes(x=beta, y=factor(celltypeNew2), color=factor(celltype)))+
+   geom_point(shape=19, size=1.5, na.rm=T)+    
+   geom_errorbarh(aes(xmax=beta_upper, xmin=beta_lower), size=0.5, height=0.2, na.rm=T)+
+   scale_colour_manual(values=col_MCls, guide="none")+
+   xlab("Log2FoldChange")+
+   ##scale_y_discrete(breaks=c("ODC", "OPC", "Astrocyte", "Microglia", "DA", "Non_DA", "Pericyte", "Bulk"))+ 
+   geom_vline(xintercept=0, size=0.25, linetype="dashed")+
+   facet_wrap(~factor(gene), ncol=2, scales="free")+
+   theme_bw()+
+   theme(strip.text=element_text(size=12),
+         axis.title.y=element_blank(),
+         ##axis.text.x=element_text(size=8),
+         axis.text.y=element_markdown())
+         ##plot.margin=unit(c(0.1, 0.5, 0.1, 0.1), "cm"))
+  
+figfn <- paste(outdir, "Figure4.3_", ii, "_forestplot.png", sep="")
+png(filename=figfn, width=480, height=300, res=120)  
+print(p3)
+dev.off()
+
+
+###
+### marijuana
+
+ii <- "marijuana"
+geneSel <- df%>%filter(SYMBOL%in%DEG_unq, category==ii)%>%pull(SYMBOL)%>%unique()
+
+###
+res2 <- res%>%filter(gene%in%geneSel)%>%
+   dplyr::select(gene, beta=estimate, SE=stderror, p.adjusted, celltype)
+
+###
+old2 <- old%>%filter(gene%in%geneSel)%>%mutate(celltype="Bulk")%>%
+   dplyr::select(gene, beta=log2FoldChange, SE=lfcSE, p.adjusted=padj, celltype)
+
+
+
+###
+plotDF <- rbind(res2, old2)
+plotDF2 <- my_plotDF(plotDF)
+
+plotDF2 <- plotDF2%>%
+   mutate(p.adjusted=ifelse(is.na(p.adjusted), 1, p.adjusted),
+          celltypeNew=ifelse(p.adjusted<0.1&abs(beta)>0, glue("<b>{celltype}"), glue("<i>{celltype}")),
+          MCls_value=as.numeric(MCls_val[as.character(celltype)]),
+          celltypeNew2=fct_reorder(celltypeNew, MCls_value),
+          beta_upper=beta+1.96*SE,
+          beta_lower=beta-1.96*SE)
+
+
+###
+### main
+p3 <- ggplot(plotDF2, aes(x=beta, y=factor(celltypeNew2), color=factor(celltype)))+
+   geom_point(shape=19, size=1.5, na.rm=T)+    
+   geom_errorbarh(aes(xmax=beta_upper, xmin=beta_lower), size=0.5, height=0.2, na.rm=T)+
+   scale_colour_manual(values=col_MCls, guide="none")+
+   xlab("Log2FoldChange")+
+   ##scale_y_discrete(breaks=c("ODC", "OPC", "Astrocyte", "Microglia", "DA", "Non_DA", "Pericyte", "Bulk"))+ 
+   geom_vline(xintercept=0, size=0.25, linetype="dashed")+
+   facet_wrap(~factor(gene), ncol=4, scales="free")+
+   theme_bw()+
+   theme(strip.text=element_text(size=12),
+         axis.title.y=element_blank(),
+         ##axis.text.x=element_text(size=8),
+         axis.text.y=element_markdown())
+         ##plot.margin=unit(c(0.1, 0.5, 0.1, 0.1), "cm"))
+  
+figfn <- paste(outdir, "Figure4.3_", ii, "_forestplot.png", sep="")
+png(filename=figfn, width=900, height=500, res=120)  
+print(p3)
+dev.off()
+
+
+###
+### caffeine
+ 
+ii <- "caffeine"
+geneSel <- df%>%filter(SYMBOL%in%DEG_unq, category==ii)%>%pull(SYMBOL)%>%unique()
+
+DEG_top <- res%>%dplyr::filter(gene%in%geneSel)%>%
+    group_by(gene)%>%
+    slice_max(order_by=abs(statistic), n=1)%>%ungroup()%>%
+    arrange(desc(abs(statistic)))%>%pull(gene)%>%unique()
+
+
+###
+res2 <- res%>%filter(gene%in%as.character(DEG_top[1:10]))%>%
+   dplyr::select(gene, beta=estimate, SE=stderror, p.adjusted, celltype)
+
+###
+old2 <- old%>%filter(gene%in%as.character(DEG_top[1:10]))%>%mutate(celltype="Bulk")%>%
+   dplyr::select(gene, beta=log2FoldChange, SE=lfcSE, p.adjusted=padj, celltype)
+
+
+
+###
+plotDF <- rbind(res2, old2)
+plotDF2 <- my_plotDF(plotDF)
+
+plotDF2 <- plotDF2%>%
+   mutate(p.adjusted=ifelse(is.na(p.adjusted), 1, p.adjusted),
+          celltypeNew=ifelse(p.adjusted<0.1&abs(beta)>0, glue("<b>{celltype}"), glue("<i>{celltype}")),
+          MCls_value=as.numeric(MCls_val[as.character(celltype)]),
+          celltypeNew2=fct_reorder(celltypeNew, MCls_value),
+          beta_upper=beta+1.96*SE,
+          beta_lower=beta-1.96*SE)
+
+
+###
+### main
+p3 <- ggplot(plotDF2, aes(x=beta, y=factor(celltypeNew2), color=factor(celltype)))+
+   geom_point(shape=19, size=1.5, na.rm=T)+    
+   geom_errorbarh(aes(xmax=beta_upper, xmin=beta_lower), size=0.5, height=0.2, na.rm=T)+
+   scale_colour_manual(values=col_MCls, guide="none")+
+   xlab("Log2FoldChange")+
+   ##scale_y_discrete(breaks=c("ODC", "OPC", "Astrocyte", "Microglia", "DA", "Non_DA", "Pericyte", "Bulk"))+ 
+   geom_vline(xintercept=0, size=0.25, linetype="dashed")+
+   facet_wrap(~factor(gene), ncol=5, scales="free")+
+   theme_bw()+
+   theme(strip.text=element_text(size=12),
+         axis.title.y=element_blank(),
+         ##axis.text.x=element_text(size=8),
+         axis.text.y=element_markdown())
+         ##plot.margin=unit(c(0.1, 0.5, 0.1, 0.1), "cm"))
+   
+figfn <- paste(outdir, "Figure4.3_", ii, "_forestplot.png", sep="")
+png(filename=figfn, width=1150, height=500, res=120)  
+print(p3)
+dev.off()
+
+
+
+###############
+### alcohol ###
+###############
+
+###
+### category alcohol
+ii <- "alcohol"
+geneSel <- df%>%filter(SYMBOL%in%DEG_unq, category==ii)%>%pull(SYMBOL)%>%unique()
+
+DEG_top <- res%>%dplyr::filter(gene%in%geneSel)%>%
+    group_by(gene)%>%
+    slice_max(order_by=abs(statistic), n=1)%>%ungroup()%>%
+    arrange(desc(abs(statistic)))%>%pull(gene)%>%unique()
+
+
+
+###
+res2 <- res%>%filter(gene%in%DEG_top[1:5])%>%
+   dplyr::select(gene, beta=estimate, SE=stderror, p.adjusted, celltype)
+
+###
+old2 <- old%>%filter(gene%in%DEG_top[1:5])%>%mutate(celltype="Bulk")%>%
+   dplyr::select(gene, beta=log2FoldChange, SE=lfcSE, p.adjusted=padj, celltype)
+
+ 
+
+###
+plotDF <- rbind(res2, old2)
+plotDF2 <- my_plotDF(plotDF)
+
+plotDF2 <- plotDF2%>%
+   mutate(p.adjusted=ifelse(is.na(p.adjusted), 1, p.adjusted),
+  celltypeNew=gsub("_", " ", celltype),
+  celltypeNew=ifelse(p.adjusted<0.1&abs(beta)>0, glue("<b style='font-size:10pt'><sup>*<b>{celltypeNew}"),
+                     glue("</i>{celltypeNew}")),
+          MCls_value=as.numeric(MCls_val[as.character(celltype)]),
+          celltypeNew2=fct_reorder(celltypeNew, MCls_value),
+          beta_upper=beta+1.96*SE,
+          beta_lower=beta-1.96*SE)
+
+
+###
+### main
+p3 <- ggplot(plotDF2, aes(x=beta, y=factor(celltypeNew2), color=factor(celltype)))+
+   geom_point(shape=19, size=1.5, na.rm=T)+    
+   geom_errorbarh(aes(xmax=beta_upper, xmin=beta_lower), size=0.5, height=0.2, na.rm=T)+
+   scale_colour_manual(values=col_MCls, guide="none")+
+   xlab("Log2FoldChange")+
+   ##scale_y_discrete(breaks=c("ODC", "OPC", "Astrocyte", "Microglia", "DA", "Non_DA", "Pericyte", "Bulk"))+ 
+   geom_vline(xintercept=0, size=0.25, linetype="dashed")+
+   facet_wrap(~factor(gene), ncol=5, scales="free")+
+   theme_bw()+
+   theme(strip.text=element_text(size=12),
+         axis.title.y=element_blank(),
+         ##axis.text.x=element_text(size=8),
+         axis.text.y=element_markdown())
+         ##plot.margin=unit(c(0.1, 0.5, 0.1, 0.1), "cm"))
+  
+figfn <- paste(outdir, "Figure4.3_", ii, "_forestplot.png", sep="")
+png(filename=figfn, width=950, height=250, res=120)  
+print(p3)
+dev.off()
+
+
+### source plots data
+x1 <- plotDF2%>%
+   mutate(p.adjusted=ifelse(is.na(p.adjusted), 1, p.adjusted),
+  celltypeNew=gsub("_", " ", celltype),
+    MCls_value=as.numeric(MCls_val[as.character(celltype)]),
+          beta_upper=beta+1.96*SE,
+          beta_lower=beta-1.96*SE)
+
+x1$traits <- "Alcohol"
+
+
+
+#############
+### smoke ### 
+#############
+
+
+###
+### category smoke
+ii <- "smoke"
+geneSel <- df%>%filter(SYMBOL%in%DEG_unq, category==ii)%>%pull(SYMBOL)%>%unique()
+
+DEG_top <- res%>%dplyr::filter(gene%in%geneSel)%>%
+    group_by(gene)%>%
+    slice_max(order_by=abs(statistic), n=1)%>%ungroup()%>%
+    arrange(desc(abs(statistic)))%>%pull(gene)%>%unique()
+
+
+
+###
+res2 <- res%>%filter(gene%in%DEG_top[1:5])%>%
+   dplyr::select(gene, beta=estimate, SE=stderror, p.adjusted, celltype)
+
+###
+old2 <- old%>%filter(gene%in%DEG_top[1:5])%>%mutate(celltype="Bulk")%>%
+   dplyr::select(gene, beta=log2FoldChange, SE=lfcSE, p.adjusted=padj, celltype)
+
+ 
+
+###
+plotDF <- rbind(res2, old2)
+plotDF2 <- my_plotDF(plotDF)
+
+plotDF2 <- plotDF2%>%
+   mutate(p.adjusted=ifelse(is.na(p.adjusted), 1, p.adjusted),
+  celltypeNew=gsub("_", " ", celltype),
+  celltypeNew=ifelse(p.adjusted<0.1&abs(beta)>0, glue("<b style='font-size:10pt'><sup>*<b>{celltypeNew}"),
+                     glue("</i>{celltypeNew}")),
+          MCls_value=as.numeric(MCls_val[as.character(celltype)]),
+          celltypeNew2=fct_reorder(celltypeNew, MCls_value),
+          beta_upper=beta+1.96*SE,
+          beta_lower=beta-1.96*SE)
+
+
+###
+### main
+p3 <- ggplot(plotDF2, aes(x=beta, y=factor(celltypeNew2), color=factor(celltype)))+
+   geom_point(shape=19, size=1.5, na.rm=T)+    
+   geom_errorbarh(aes(xmax=beta_upper, xmin=beta_lower), size=0.5, height=0.2, na.rm=T)+
+   scale_colour_manual(values=col_MCls, guide="none")+
+   xlab("Log2FoldChange")+
+   ##scale_y_discrete(breaks=c("ODC", "OPC", "Astrocyte", "Microglia", "DA", "Non_DA", "Pericyte", "Bulk"))+ 
+   geom_vline(xintercept=0, size=0.25, linetype="dashed")+
+   facet_wrap(~factor(gene), ncol=5, scales="free")+
+   theme_bw()+
+   theme(strip.text=element_text(size=12),
+         axis.title.y=element_blank(),
+         ##axis.text.x=element_text(size=8),
+         axis.text.y=element_markdown())
+         ##plot.margin=unit(c(0.1, 0.5, 0.1, 0.1), "cm"))
+  
+figfn <- paste(outdir, "Figure4.3_", ii, "_forestplot.png", sep="")
+png(filename=figfn, width=950, height=250, res=120)  
+print(p3)
+dev.off()
+
+
+### source data
+
+x2 <- plotDF2%>%
+   mutate(p.adjusted=ifelse(is.na(p.adjusted), 1, p.adjusted),
+  celltypeNew=gsub("_", " ", celltype),
+ ## celltypeNew=ifelse(p.adjusted<0.1&abs(beta)>0, glue("<b style='font-size:10pt'><sup>*<b>{celltypeNew}"),
+##                     glue("</i>{celltypeNew}")),
+          MCls_value=as.numeric(MCls_val[as.character(celltype)]),
+ ##         celltypeNew2=fct_reorder(celltypeNew, MCls_value),
+          beta_upper=beta+1.96*SE,
+          beta_lower=beta-1.96*SE)
+x2$traits <- "Smoking"
 
 
 
 
 
-### summary
-## DEG_sc <- res2 <- res%>%filter(abs(estimate)>0.25, p.adjusted<0.1)%>%pull(gene)%>%unique()
-## length(intersect(DEG_sc, old_DEG))/length(old_DEG)
+################
+### caffeine ### 
+################
+
+
+###
+### category smoke
+ii <- "caffeine"
+geneSel <- df%>%filter(SYMBOL%in%DEG_unq, category==ii)%>%pull(SYMBOL)%>%unique()
+
+DEG_top <- res%>%dplyr::filter(gene%in%geneSel)%>%
+    group_by(gene)%>%
+    slice_max(order_by=abs(statistic), n=1)%>%ungroup()%>%
+    arrange(desc(abs(statistic)))%>%pull(gene)%>%unique()
+
+
+
+###
+res2 <- res%>%filter(gene%in%DEG_top[1:5])%>%
+   dplyr::select(gene, beta=estimate, SE=stderror, p.adjusted, celltype)
+
+###
+old2 <- old%>%filter(gene%in%DEG_top[1:5])%>%mutate(celltype="Bulk")%>%
+   dplyr::select(gene, beta=log2FoldChange, SE=lfcSE, p.adjusted=padj, celltype)
+
+ 
+
+###
+plotDF <- rbind(res2, old2)
+plotDF2 <- my_plotDF(plotDF)
+
+plotDF2 <- plotDF2%>%
+   mutate(p.adjusted=ifelse(is.na(p.adjusted), 1, p.adjusted),
+  celltypeNew=gsub("_", " ", celltype),
+  celltypeNew=ifelse(p.adjusted<0.1&abs(beta)>0, glue("<b style='font-size:10pt'><sup>*<b>{celltypeNew}"),
+                     glue("</i>{celltypeNew}")),
+          MCls_value=as.numeric(MCls_val[as.character(celltype)]),
+          celltypeNew2=fct_reorder(celltypeNew, MCls_value),
+          beta_upper=beta+1.96*SE,
+          beta_lower=beta-1.96*SE)
+
+
+###
+### main
+p3 <- ggplot(plotDF2, aes(x=beta, y=factor(celltypeNew2), color=factor(celltype)))+
+   geom_point(shape=19, size=1.5, na.rm=T)+    
+   geom_errorbarh(aes(xmax=beta_upper, xmin=beta_lower), size=0.5, height=0.2, na.rm=T)+
+   scale_colour_manual(values=col_MCls, guide="none")+
+   xlab("Log2FoldChange")+
+   ##scale_y_discrete(breaks=c("ODC", "OPC", "Astrocyte", "Microglia", "DA", "Non_DA", "Pericyte", "Bulk"))+ 
+   geom_vline(xintercept=0, size=0.25, linetype="dashed")+
+   facet_wrap(~factor(gene), ncol=5, scales="free")+
+   theme_bw()+
+   theme(strip.text=element_text(size=12),
+         axis.title.y=element_blank(),
+         ##axis.text.x=element_text(size=8),
+         axis.text.y=element_markdown())
+         ##plot.margin=unit(c(0.1, 0.5, 0.1, 0.1), "cm"))
+  
+figfn <- paste(outdir, "Figure4.3_", ii, "_forestplot2.png", sep="")
+png(filename=figfn, width=950, height=250, res=120)  
+print(p3)
+dev.off()
+
+
+
+x3 <- plotDF2%>%
+   mutate(p.adjusted=ifelse(is.na(p.adjusted), 1, p.adjusted),
+  celltypeNew=gsub("_", " ", celltype),
+  ###celltypeNew=ifelse(p.adjusted<0.1&abs(beta)>0, glue("<b style='font-size:10pt'><sup>*<b>{celltypeNew}"),
+  ##                   glue("</i>{celltypeNew}")),
+          MCls_value=as.numeric(MCls_val[as.character(celltype)]),
+  ##        celltypeNew2=fct_reorder(celltypeNew, MCls_value),
+          beta_upper=beta+1.96*SE,
+          beta_lower=beta-1.96*SE)
+
+x3$traits <- "Caffeine"
+
+
+xcomb <- rbind(x1, x2, x3)
+
+opfn <- paste(outdir, "TableS_Figure5_forestplot.txt", sep="")
+write.table(xcomb, opfn, row.names=F, col.names=T, quote=F, sep="\t")

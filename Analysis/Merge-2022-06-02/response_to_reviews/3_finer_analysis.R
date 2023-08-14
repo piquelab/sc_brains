@@ -23,13 +23,15 @@ library(openxlsx)
 
 rm(list=ls())
 
+outdir <- "./3_re-analysis.outs/"
+if ( !file.exists(outdir)) dir.create(outdir, showWarnings=F, recursive=T)
+
+
+
 #######################################################
 ### 1. finer cluster analysis for ODC and Microglia ###
 #######################################################
  
-outdir <- "./3_re-analysis.outs/"
-if ( !file.exists(outdir)) dir.create(outdir, showWarnings=F, recursive=T)
-
 ###
 ###
 sc <- read_rds("../3_cluster.outs/1.2_seurat.annot.rds")
@@ -165,115 +167,187 @@ write.xlsx(res2, opfn, overwrite=T)
 
 
 
+####################################
+## overlap marker gene expression ##
+####################################
+fn <- "./3_re-analysis.outs/3.1_ODC_marker_top100.xlsx"
+x <- read.xlsx(fn)
+
+###
+fn <- "./3_re-analysis.outs/marques_ODC_aaf6463_table_s1.xlsx"
+ref <- read.xlsx(fn)
+ref2 <- ref[2:51,1:24]
+colnames(ref2) <- ref[1,1:24]
+
+###
+MCls <- gsub(" |/|-", "_", colnames(ref2))
+n_MCl <- length(MCls)
 
 
-#####################################
-### 2. Generate pseudo-bulk data ####
-#####################################
+DF <- NULL
+for (ii in c("0", "1")){
+   ##
+   x0 <- x%>%filter(cluster==ii)%>%dplyr::select(-p_val, -p_val_adj, -cluster)
+   gene0 <- x0$gene 
+   ##
+   for (k in 1:n_MCl){
+       ##
+       gene1 <- toupper(ref2[,k])
+       olap <- intersect(gene0, gene1)
+       ##
+       if ( length(olap)>0){
+           ##
+           df <- data.frame(cluster=ii, celltype=MCls[k], olap_gene=olap)
+           df <- df%>%left_join(x0, by=c("olap_gene"="gene"))           
+           DF <- rbind(DF, df)
+       }    
+   } ##
+}
 
-rm(list=ls())
+opfn <- paste(outdir, "3.1_ODC_olap.xlsx", sep="")
+write.xlsx(DF, opfn, overwrite=T)
+###
 
-outdir <- "./3_re-analysis.outs/Diff_analysis.outs/"
-if ( !file.exists(outdir)) dir.create(outdir, showWarnings=F, recursive=T)
+summ <- DF%>%group_by(cluster, celltype)%>%summarize(ngene=n(), .groups="drop")%>%ungroup()
+summ2 <- summ%>%group_by(cluster)%>%arrange(desc(ngene), .by_group=T)
+opfn <- paste(outdir, "3.1_ODC_olap_ngene.xlsx", sep="")
+write.xlsx(summ2, opfn)
 
-sc <- read_rds("./3_re-analysis.outs/1.1_ODC_seurat.cluster.rds")
 
-counts <- sc@assays$RNA@counts
-meta <- sc@meta.data
+###
+### Heatmap
+fn <- "./3_re-analysis.outs/3.1_ODC_olap.xlsx"
+DF <- read.xlsx(fn)
 
-anno <- data.frame(rn=rownames(counts), rnz=rowSums(counts))%>%filter(rnz>0)
-    
-## ##gene:64428, symbol:58149, ensgene:63697,
-autosome <- as.character(1:22)
-grch38_unq <- grch38%>%dplyr::filter(symbol%in%anno$rn, chr%in%autosome)%>%
-   distinct(symbol, chr, .keep_all=T)%>%
-   dplyr::select(ensgene, symbol, chr, start, end, biotype) 
-grch38_unq <- grch38_unq%>%group_by(symbol)%>%mutate(ny=n())%>%filter(ny==1)
+DF2 <- DF%>%group_by(cluster)%>%dplyr::distinct(olap_gene, .keep_all=T)%>%ungroup()
+DF2 <- DF2%>%group_by(cluster)%>%arrange(desc(avg_log2FC), .by_group=T)%>%ungroup()
+
+geneSel <- unique(DF2$olap_gene)
+
+fn <- "./3_re-analysis.outs/1.1_ODC_seurat.cluster.rds"
+sc <- read_rds(fn)
+sc0 <- subset(sc, subset=seurat_clusters%in%c(0, 1))
+
+
+p0 <- DoHeatmap(sc0, features=geneSel, slot="data", angle=0, size=1.5)+
+   guides(color="none")+ 
+   theme(axis.text=element_text(size=4),
+         legend.key.size=grid::unit(0.2, "cm"),
+         legend.text=element_text(size=5),
+         legend.title=element_text(size=5))
  
-annoSel <- anno%>%filter(rn%in%grch38_unq$symbol)  ### 29,817
-        
-Y <- counts[annoSel$rn,]
+figfn <- paste(outdir, "Figure3_ODC_heatmap.png", sep="")
+ggsave(filename=figfn, plot=p0, device="png", width=8.5, height=4.8, units="cm")
 
-## meta data
-cluster_sel <- c("0", "1")
-meta <- sc@meta.data%>%
-   mutate(seurat_cluster2=as.character(seurat_clusters))%>%filter(seurat_cluster2%in%cluster_sel)
 
-meta <- meta%>%
-       mutate(bti=paste(seurat_cluster2,  sampleID,  sep="_"))%>%
-       dplyr::select(NEW_BARCODE, bti)
 
-dd <- meta %>%group_by(bti)%>%summarise(ncell=n(),.groups="drop")
+####
+###
+fn <- "./3_re-analysis.outs/1.1_ODC_seurat.cluster.rds"
+sc <- read_rds(fn)
 
-Y <- Y[, meta$NEW_BARCODE]       
-bti <- factor(meta$bti)       
-X <- model.matrix(~0+bti)
-YtX <- Y %*% X
-YtX <- as.matrix(YtX)
-colnames(YtX) <- gsub("^bti", "", colnames(YtX))
-## opfn <- paste(outdir, "YtX.comb.rds", sep="")
-## write_rds(YtX, opfn)
+x <- sc@meta.data
+umap <- Embeddings(sc, reduction="umap")
+
+## covariates
+fn <- "../BrainCV_cell_counts_final_correct_2022-12-06.xlsx"
+cvt <- read.xlsx(fn)
+cvt2 <- cvt%>%dplyr::select(sampleID, Category)
+
+plotDF <- data.frame(umap[,1:2], cluster=as.character(x$seurat_clusters), sampleID=x$sampleID)
+plotDF <- plotDF%>%left_join(cvt2, by="sampleID")
+
+
+##
+### umap plots
+lab_facet <- as_labeller(c("0"="cluster 0", "1"="cluster 1"))
+plotDF2 <- plotDF%>%filter(cluster%in%c("0", "1"))
+###
+p <- ggplot(plotDF2, aes(x=UMAP_1, y=UMAP_2))+
+   geom_point(aes(color=factor(Category)), size=0.1)+
+   scale_colour_manual(values=c("Control"="#0571b0", "Opioid"="#ca0020"),
+       guide=guide_legend(override.aes=list(size=3)))+
+   facet_wrap(~factor(cluster), labeller=lab_facet, scales="fixed", ncol=2)+ 
+   theme_bw()+
+   theme(axis.text=element_text(size=12),
+         axis.title=element_text(size=12),
+         legend.title=element_blank(),
+         legend.key.size=unit(0.5, "cm"),
+         strip.text=element_text(size=14))
+
+figfn <- paste(outdir, "Figure3.1_subcluster.png", sep="")
+png(figfn, width=680, height=380, res=120)
+print(p)
+dev.off()
+
+summ <- plotDF2%>%group_by(cluster, Category)%>%summarize(ncell=n(),.groups="drop")
+
+
+################################ 
+### OPALIN, S100B and RBFOX1 ###
+################################
+
+fn <- "./3_re-analysis.outs/Diff_analysis.outs/0.1_ODC_YtX_sel.comb.rds"
+x <- read_rds(fn)
+depth <- colSums(x)
+x2 <- sweep(x, 2, depth, "/")*1e+6
 
 
 ###
-### Filter 30 cells per combination
-ddx <- dd%>%filter(ncell>=30)
-YtX_sel <- YtX[,ddx$bti]
-opfn <- "./3_re-analysis.outs/2.1_ODC_YtX_sel.comb.rds"
-write_rds(YtX_sel, opfn)
+fn <- "../BrainCV_cell_counts_final_correct_2022-12-06.xlsx"
+cvt <- read.xlsx(fn)
+cvt2 <- cvt%>%dplyr::select(sampleID, Category)
 
 
 
-#################
-### Microglia ### 
-#################
+tmp <- str_split(colnames(x2), "_", simplify=T)
+plotDF <- data.frame(rn=colnames(x2), MCls=tmp[,1], sampleID=tmp[,2]) 
+plotDF <- plotDF%>%left_join(cvt2, by="sampleID")
 
-sc <- read_rds("./3_re-analysis.outs/1.2_Microglia_seurat.cluster.rds")
 
-counts <- sc@assays$RNA@counts
-meta <- sc@meta.data
 
-anno <- data.frame(rn=rownames(counts), rnz=rowSums(counts))%>%filter(rnz>0)
-    
-## ##gene:64428, symbol:58149, ensgene:63697,
-autosome <- as.character(1:22)
-grch38_unq <- grch38%>%dplyr::filter(symbol%in%anno$rn, chr%in%autosome)%>%
-   distinct(symbol, chr, .keep_all=T)%>%
-   dplyr::select(ensgene, symbol, chr, start, end, biotype) 
-grch38_unq <- grch38_unq%>%group_by(symbol)%>%mutate(ny=n())%>%filter(ny==1)
- 
-annoSel <- anno%>%filter(rn%in%grch38_unq$symbol)  ### 28,623
-        
-Y <- counts[annoSel$rn,]
+geneList <- c("OPALIN", "S100B", "RBFOX1")
+ngene <- length(geneList)
+figs_ls <- lapply(1:ngene, function(i){
+    ##
+    gene <- geneList[i]
+    cat(gene, "\n")
+    plotDF2 <- plotDF%>%mutate(y=log2(x2[gene,]+1))
+    ###
+    p <- ggplot(plotDF2, aes(x=MCls, y=y, color=Category))+
+       geom_violin(width=0.5)+
+       geom_jitter(width=0.2, size=0.1)+
+       ylab(bquote(~"Normalized gene expression"~"("~log[2]~"CPM"~")"))+
+       scale_color_manual(values=c("Control"="#0571b0", "Opioid"="#ca0020"))+ 
+       ##scale_fill_manual(values=c("Control"="#0571b0", "Opioid"="#ca0020"))+ 
+       ggtitle(gene)+
+       theme_bw()+
+       theme(plot.title=element_text(hjust=0.5, size=12),
+             axis.text.x=element_text(size=10),
+             axis.text.y=element_text(size=10),
+             axis.title.x=element_blank(),
+             axis.title.y=element_text(size=10),
+             legend.title=element_blank())
+    ##
+    if ( i==3){
+       p <- p+theme(legend.key.size=unit(0.2, "cm"))
+    }else{
+       p <- p+theme(legend.position="none")
+    }
+    p
+})
 
-###
-### meta data
-meta <- sc@meta.data%>%
-   mutate(seurat_cluster2=as.character(seurat_clusters),
-          seurat_cluster2=ifelse(seurat_cluster2%in%c("0", "5"), "0", seurat_cluster2),
-          seurat_cluster2=ifelse(seurat_cluster2%in%c("3", "4"), "3", seurat_cluster2))
 
-meta <- meta%>%
-       mutate(bti=paste(seurat_cluster2,  sampleID,  sep="_"))%>%
-       dplyr::select(NEW_BARCODE, bti)
-
-dd <- meta %>%group_by(bti)%>%summarise(ncell=n(),.groups="drop")
-
-Y <- Y[, meta$NEW_BARCODE]       
-bti <- factor(meta$bti)       
-X <- model.matrix(~0+bti)
-YtX <- Y %*% X
-YtX <- as.matrix(YtX)
-colnames(YtX) <- gsub("^bti", "", colnames(YtX))
-## opfn <- paste(outdir, "YtX.comb.rds", sep="")
-## write_rds(YtX, opfn)
+### output figures
+figfn <- paste(outdir, "Figure4_marker_ODC_indi_violin.png", sep="")
+png(figfn, width=780, height=380, res=120)
+plot_grid(plotlist=figs_ls, ncol=3, rel_widths=c(1, 1, 1.4))
+dev.off()
 
 
 ###
-### Filter 30 cells per combination
-ddx <- dd%>%filter(ncell>=30)
-YtX_sel <- YtX[,ddx$bti]
-opfn <- "./3_re-analysis.outs/2.2_Microglia_YtX_sel.comb.rds"
-write_rds(YtX_sel, opfn) 
-
+###
+fn <- "./3_re-analysis.outs/Diff_analysis.outs/1.1_ODC_DESeq_results_default.rds"
+res <- read_rds(fn)
+res2 <- res%>%filter(abs(estimate)>0.25, p.adjusted<0.1)
 

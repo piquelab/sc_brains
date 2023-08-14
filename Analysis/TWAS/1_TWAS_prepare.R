@@ -5,7 +5,7 @@ library(clusterProfiler)
 library(org.Hs.eg.db)
 library(data.table)
 library(qvalue)
-
+library(openxlsx)
 ##
 ## library(DESeq2)
 ## library(annotables)
@@ -85,6 +85,11 @@ twas <- twas%>%distinct(gene_name, .keep_all=T)%>%column_to_rownames(var="gene_n
 traits <- colnames(twas)
 gene <- rownames(twas)
 
+## x <- sort(traits[-1])
+## dd <- data.frame(traits=x)
+## opfn <- "traits_list.txt"
+## write.table(dd, file=opfn, row.names=F, col.names=F, quote=F)
+ 
 
 ## data for QQ plot
 plotDF <- map_dfr(target_traits, function(ii){

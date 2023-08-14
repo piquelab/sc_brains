@@ -112,7 +112,7 @@ write.xlsx(twas_new2, opfn, overwrite=T)
 gene_comb <- openxlsx::read.xlsx("./1_TWAS.outs/1_TWAS_traits.xlsx") 
 trait_DF <- openxlsx::read.xlsx("./1_TWAS.outs/traits.xlsx")%>%dplyr::select(traits, Relevant)
 gene_comb2 <- gene_comb%>%left_join(trait_DF, by="traits")%>%filter(Relevant==1)
-gene_comb2 <- gene_comb2%>%dplyr::select(-Relevant)%>%filter(!category%in%c("ADHD", "parkinson", "addiction"))
+gene_comb2 <- gene_comb2%>%dplyr::select(-Relevant)%>%filter(!category%in%c("ADHD", "parkinson"))
 
 
 x3 <- gene_comb2%>%filter(SYMBOL%in%geneall)
@@ -138,7 +138,7 @@ olap <- intersect(DEG, twas_gene)
 gene_comb <- openxlsx::read.xlsx("./1_TWAS.outs/1_TWAS_traits.xlsx") 
 trait_DF <- openxlsx::read.xlsx("./1_TWAS.outs/traits.xlsx")%>%dplyr::select(traits, Relevant)
 gene_comb2 <- gene_comb%>%left_join(trait_DF, by="traits")%>%filter(Relevant==1)
-gene_comb2 <- gene_comb2%>%dplyr::select(-Relevant)%>%filter(!category%in%c("ADHD", "parkinson", "addiction"))
+gene_comb2 <- gene_comb2%>%dplyr::select(-Relevant)%>%filter(!category%in%c("ADHD", "parkinson"))
 
 gene_comb2 <- gene_comb2%>%dplyr::select(SYMBOL, category, traits)
 
@@ -160,16 +160,32 @@ gene_comb2 <- rbind(gene_comb2, x2, x3, x4)
 gene_comb3 <- gene_comb2%>%filter(SYMBOL%in%geneall)
 
 
-## ###
-## ### trait of interest 
-## summ <- x3%>%group_by(category, traits)%>%summarise(nsig_twas=length(unique(SYMBOL)), .groups="drop")
+###
+### trait of interest, supplemental tables
+
+## gene_comb <- openxlsx::read.xlsx("./1_TWAS.outs/1_TWAS_traits.xlsx") 
+## trait_DF <- openxlsx::read.xlsx("./1_TWAS.outs/traits.xlsx")%>%dplyr::select(traits, Relevant)
+## gene_comb2 <- gene_comb%>%left_join(trait_DF, by="traits")%>%filter(Relevant==1)
+## gene_comb2 <- gene_comb2%>%dplyr::select(-Relevant)%>%filter(!category%in%c("ADHD", "parkinson"))
+
+## ##
+## x2 <- read.xlsx("TWAS_SUD_nmh_sig.xlsx")%>%mutate(zscore=NA)%>%
+##     dplyr::select(gene, zscore, pval, FDR, traits, category, SYMBOL)
+## x2$category <- "addiction-GTEx"
+
+## x3 <- read.xlsx("TWAS_SUD_nmh_PsychENCODE_sig.xlsx")
+
+## xcomb <- rbind(gene_comb2, x2, x3)
+
+## xcomb2 <- xcomb%>%mutate(category=gsub("-.*", "", category))
+## summ <- xcomb2%>%group_by(category, traits)%>%summarise(nsig_twas=length(unique(SYMBOL)), .groups="drop")
 ## fn <- paste(outdir, "TableS_traits_list.xlsx", sep="")
 ## write.xlsx(summ, fn, overwrite=T)
 
 ## ###
 ## ### gene list for each trait
 ## fn <- paste(outdir, "TableS_genes_SUD.xlsx", sep="")
-## write.xlsx(x3, fn, overwrite=T)
+## write.xlsx(xcomb, fn, overwrite=T)
 
 
 
@@ -177,7 +193,8 @@ gene_comb3 <- gene_comb2%>%filter(SYMBOL%in%geneall)
 ####################
 ### overlap DEGs ###
 ####################
- 
+gene_comb3 <- gene_comb3%>%mutate(category=gsub("-rf", "", category))
+
 category <- sort(unique(gene_comb3$category))
 DF <- NULL
 for (oneMCl in celltypes){
@@ -249,7 +266,7 @@ plotDF <- DF%>%
 
  
 ###
-plotDF2 <- plotDF%>%filter(!category%in%c("Union_twas"))
+plotDF2 <- plotDF%>%filter(!category%in%c("Union_twas", "height", "CAD", "BMI"))
 p <- ggplot(plotDF2, aes(x=MCl2, y=category, size=percent2, color=MCls))+
    geom_point(alpha=0.8)+
    scale_color_manual(values=col_MCls, guide="none")+ 
@@ -274,6 +291,8 @@ figfn <- paste(outdir, "Figure1_bubble.png", sep="")
 png(figfn, width=620, height=400, res=120)
 print(p)
 dev.off()
+
+
 
 
 
@@ -380,7 +399,7 @@ rownames(res_prop) <- traits
 gene_comb <- openxlsx::read.xlsx("./1_TWAS.outs/1_TWAS_traits.xlsx") 
 trait_DF <- openxlsx::read.xlsx("./1_TWAS.outs/traits.xlsx")%>%dplyr::select(traits, Relevant)
 gene_comb2 <- gene_comb%>%left_join(trait_DF, by="traits")%>%filter(Relevant==1)
-gene_comb2 <- gene_comb2%>%dplyr::select(-Relevant)%>%filter(!category%in%c("ADHD", "parkinson", "addiction"))
+gene_comb2 <- gene_comb2%>%dplyr::select(-Relevant)%>%filter(!category%in%c("ADHD", "parkinson"))
 x1 <- unique(gene_comb2$SYMBOL)
 x2 <- unique(read.xlsx("TWAS_SUD_nmh_sig.xlsx")$SYMBOL)
 x3 <- unique(read.xlsx("TWAS_SUD_nmh_PsychENCODE_sig.xlsx")$SYMBOL)
@@ -421,7 +440,7 @@ png(figfn, width=450, height=500, res=120)
 print(p)
 dev.off()
 
-
+ 
 
 DEGs <- resDiff2%>%pull(gene)%>%unique()
 nolap <- length(intersect(DEGs, twas_gene))

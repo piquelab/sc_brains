@@ -30,6 +30,121 @@ outdir <- "./3_re-analysis.outs/Diff_analysis.outs/"
 if ( !file.exists(outdir)) dir.create(outdir, showWarnings=F, recursive=T)
 
 
+
+
+
+
+#####################################
+### 2. Generate pseudo-bulk data ####
+#####################################
+
+rm(list=ls())
+
+outdir <- "./3_re-analysis.outs/Diff_analysis.outs/"
+if ( !file.exists(outdir)) dir.create(outdir, showWarnings=F, recursive=T)
+
+sc <- read_rds("./3_re-analysis.outs/1.1_ODC_seurat.cluster.rds")
+
+counts <- sc@assays$RNA@counts
+meta <- sc@meta.data
+
+anno <- data.frame(rn=rownames(counts), rnz=rowSums(counts))%>%filter(rnz>0)
+    
+## ##gene:64428, symbol:58149, ensgene:63697,
+autosome <- as.character(1:22)
+grch38_unq <- grch38%>%dplyr::filter(symbol%in%anno$rn, chr%in%autosome)%>%
+   distinct(symbol, chr, .keep_all=T)%>%
+   dplyr::select(ensgene, symbol, chr, start, end, biotype) 
+grch38_unq <- grch38_unq%>%group_by(symbol)%>%mutate(ny=n())%>%filter(ny==1)
+ 
+annoSel <- anno%>%filter(rn%in%grch38_unq$symbol)  ### 29,817
+        
+Y <- counts[annoSel$rn,]
+
+## meta data
+cluster_sel <- c("0", "1")
+meta <- sc@meta.data%>%
+   mutate(seurat_cluster2=as.character(seurat_clusters))%>%filter(seurat_cluster2%in%cluster_sel)
+
+meta <- meta%>%
+       mutate(bti=paste(seurat_cluster2,  sampleID,  sep="_"))%>%
+       dplyr::select(NEW_BARCODE, bti)
+
+dd <- meta %>%group_by(bti)%>%summarise(ncell=n(),.groups="drop")
+
+Y <- Y[, meta$NEW_BARCODE]       
+bti <- factor(meta$bti)       
+X <- model.matrix(~0+bti)
+YtX <- Y %*% X
+YtX <- as.matrix(YtX)
+colnames(YtX) <- gsub("^bti", "", colnames(YtX))
+## opfn <- paste(outdir, "YtX.comb.rds", sep="")
+## write_rds(YtX, opfn)
+
+
+###
+### Filter 30 cells per combination
+ddx <- dd%>%filter(ncell>=30)
+YtX_sel <- YtX[,ddx$bti]
+opfn <- "./3_re-analysis.outs/Diff_analysis.outs/0.1_ODC_YtX_sel.comb.rds"
+write_rds(YtX_sel, opfn)
+
+
+
+#################
+### Microglia ### 
+#################
+
+sc <- read_rds("./3_re-analysis.outs/1.2_Microglia_seurat.cluster.rds")
+
+counts <- sc@assays$RNA@counts
+meta <- sc@meta.data
+
+anno <- data.frame(rn=rownames(counts), rnz=rowSums(counts))%>%filter(rnz>0)
+    
+## ##gene:64428, symbol:58149, ensgene:63697,
+autosome <- as.character(1:22)
+grch38_unq <- grch38%>%dplyr::filter(symbol%in%anno$rn, chr%in%autosome)%>%
+   distinct(symbol, chr, .keep_all=T)%>%
+   dplyr::select(ensgene, symbol, chr, start, end, biotype) 
+grch38_unq <- grch38_unq%>%group_by(symbol)%>%mutate(ny=n())%>%filter(ny==1)
+ 
+annoSel <- anno%>%filter(rn%in%grch38_unq$symbol)  ### 28,623
+        
+Y <- counts[annoSel$rn,]
+
+###
+### meta data
+meta <- sc@meta.data%>%
+   mutate(seurat_cluster2=as.character(seurat_clusters),
+          seurat_cluster2=ifelse(seurat_cluster2%in%c("0", "5"), "0", seurat_cluster2),
+          seurat_cluster2=ifelse(seurat_cluster2%in%c("3", "4"), "3", seurat_cluster2))
+
+meta <- meta%>%
+       mutate(bti=paste(seurat_cluster2,  sampleID,  sep="_"))%>%
+       dplyr::select(NEW_BARCODE, bti)
+
+dd <- meta %>%group_by(bti)%>%summarise(ncell=n(),.groups="drop")
+
+Y <- Y[, meta$NEW_BARCODE]       
+bti <- factor(meta$bti)       
+X <- model.matrix(~0+bti)
+YtX <- Y %*% X
+YtX <- as.matrix(YtX)
+colnames(YtX) <- gsub("^bti", "", colnames(YtX))
+## opfn <- paste(outdir, "YtX.comb.rds", sep="")
+## write_rds(YtX, opfn)
+
+
+###
+### Filter 30 cells per combination
+ddx <- dd%>%filter(ncell>=30)
+YtX_sel <- YtX[,ddx$bti]
+opfn <- "./3_re-analysis.outs/Diff_analysis.outs/0.2_Microglia_YtX_sel.comb.rds"
+write_rds(YtX_sel, opfn)
+
+
+
 ##############################
 ### ODC run DESeq analysis ###
 ##############################

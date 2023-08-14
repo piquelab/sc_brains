@@ -310,7 +310,7 @@ Idents(sc2) <- sc2$predicted.id
 mycol2 <- c("#fb8072", "#92cd2d", "#c38dc4", "#35978f", "#fc9016", "#b15928", "#bebada", "#80b1d3", "#fccde5",
    "#8dd3c7", "#ffff99", "#b2182b", "#828282", "#762a83")         
 
-p1 <- DimPlot(sc, reduction="umap", cols=mycol2, group.by="seurat_clusters",
+p1 <- DimPlot(sc, reduction="umap", cols=mycol2, group.by="seurat_clusters", raster=FALSE,
               label=T, repel=T, pt.size=0.2, label.size=3)+
     ##scale_color_manual(values=mycol2, drop=F)+
     ggtitle("Seurat clusters")+
@@ -320,13 +320,18 @@ p1 <- DimPlot(sc, reduction="umap", cols=mycol2, group.by="seurat_clusters",
           ## legend.text=element_text(size=10),
           legend.position="none",
           plot.title=element_text(hjust=0.5, size=12))
+## figfn <- paste(outdir, "FigureS0_umap.png", sep="")
+## png(figfn, width=500, height=450, res=120)
+## p1
+## dev.off()
+
 
 
 ###
 ### p2, umap colored by cell-type from reference
 mycol2 <- c("#92cd2d", "#80b1d3", "#fccde5", "#c38dc4", "#fc9016", "#fb8072", "#35978f")   
 
-p2 <- DimPlot(sc2, reduction="umap", cols=mycol2, group.by="predicted.id",
+p2 <- DimPlot(sc2, reduction="umap", cols=mycol2, group.by="predicted.id", raster=FALSE,
               label=T, repel=T, pt.size=0.2, label.size=3)+
     ## scale_color_manual(values=mycol2, drop=F)+
     ggtitle("Automatic annotation")+
@@ -374,7 +379,7 @@ p3 <- ggplot(df1, aes(x=Cluster2, y=predicted.id, fill=Perc))+
 ###
 ### output
 
-figfn <- paste(outdir, "Figure3_comb_ref2.png", sep="")
+figfn <- paste(outdir, "Figure3.1_comb_ref2.png", sep="")
 png(figfn, width=1100, height=400, res=120)
 plot_grid(p1, p2, p3, ncol=3, labels="AUTO", label_fontface="plain", label_x=0.1,
           align="h", axis="tb", rel_widths=c(1,1,1.3))

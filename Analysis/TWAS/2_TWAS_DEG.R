@@ -67,6 +67,64 @@ geneall <- unique(resDiff$gene)
 ## resMat2 <- resMat%>%mutate(Cluster7=rowSums(resMat[,-1]), Cluster7=ifelse(Cluster7>0, 1, 0))
 
 
+##############################
+### summary total overlap ####
+##############################
+
+###
+### GTEx 
+twas_new <- read.xlsx("TWAS_SUD_nmh_2023.xlsx")
+twas_new <- twas_new%>%dplyr::select(gene, SYMBOL=gene_name, pval=pvalue)%>%
+    mutate(gene=gsub("\\..*", "", gene), FDR=qvalue(pval)$qvalues)
+twas_new2 <- twas_new%>%dplyr::filter(FDR<0.1)%>%mutate(traits="addiction-rf", category="addiction-GTEx")%>%
+   dplyr::select(gene, pval, FDR, traits, category, SYMBOL)
+
+###
+opfn <- "TWAS_SUD_nmh_sig.xlsx"
+write.xlsx(twas_new2, file=opfn, overwrite=T)
+
+
+###
+### PsychENCODE dataset
+twas_new <- read.xlsx("TWAS_SUD_PsychENCODE_nmh_2023.xlsx")%>%drop_na(zscore, pvalue)
+
+twas_new <- twas_new%>%dplyr::select(gene, zscore, pval=pvalue)%>%
+    mutate(gene=gsub("\\..*", "", gene), FDR=qvalue(pval)$qvalues)
+ 
+twas_new2 <- twas_new%>%
+    dplyr::filter(FDR<0.1)%>%
+    mutate(traits="addiction-rf", category="addiction-PsychoENCODE")
+
+geneAnno <- bitr(twas_new2$gene, fromType="ENSEMBL", toType="SYMBOL", OrgDb=org.Hs.eg.db)
+
+twas_new2 <- twas_new2%>%left_join(geneAnno, by=c("gene"="ENSEMBL"))%>%drop_na(SYMBOL)
+###
+opfn <- "TWAS_SUD_nmh_PsychENCODE_sig.xlsx"
+write.xlsx(twas_new2, opfn, overwrite=T)
+
+
+
+
+###
+### twas from PhenomeXcan 
+
+gene_comb <- openxlsx::read.xlsx("./1_TWAS.outs/1_TWAS_traits.xlsx") 
+trait_DF <- openxlsx::read.xlsx("./1_TWAS.outs/traits.xlsx")%>%dplyr::select(traits, Relevant)
+gene_comb2 <- gene_comb%>%left_join(trait_DF, by="traits")%>%filter(Relevant==1)
+gene_comb2 <- gene_comb2%>%dplyr::select(-Relevant)%>%filter(!category%in%c("ADHD", "parkinson"))
+
+
+##x3 <- gene_comb2%>%filter(SYMBOL%in%geneall)
+
+###
+x1 <- unique(gene_comb2$SYMBOL)
+x2 <- unique(read.xlsx("TWAS_SUD_nmh_sig.xlsx")$SYMBOL)
+x3 <- unique(read.xlsx("TWAS_SUD_nmh_PsychENCODE_sig.xlsx")$SYMBOL)
+
+twas_gene <- intersect(c(x1, x2, x3), geneall)
+DEG <- resDiff2%>%pull(gene)%>%unique()
+olap <- intersect(DEG, twas_gene)
+
 #####################################
 ### TWAS genes  for each category ###
 #####################################
@@ -74,10 +132,7 @@ geneall <- unique(resDiff$gene)
 gene_comb <- openxlsx::read.xlsx("./1_TWAS.outs/1_TWAS_traits.xlsx") 
 trait_DF <- openxlsx::read.xlsx("./1_TWAS.outs/traits.xlsx")%>%dplyr::select(traits, Relevant)
 gene_comb2 <- gene_comb%>%left_join(trait_DF, by="traits")%>%filter(Relevant==1)
-gene_comb2 <- gene_comb2%>%dplyr::select(-Relevant)  ##%>%filter(!category%in%c("ADHD", "parkinson"))
-
-
-## x3 <- gene_comb2%>%filter(SYMBOL%in%geneall)
+gene_comb2 <- gene_comb2%>%dplyr::select(-Relevant)%>%filter(!category%in%c("ADHD", "parkinson"))
 
 ## ###
 ## ### trait of interest 
@@ -90,10 +145,7 @@ gene_comb2 <- gene_comb2%>%dplyr::select(-Relevant)  ##%>%filter(!category%in%c(
 ## fn <- paste(outdir, "TableS_genes_SUD.xlsx", sep="")
 ## write.xlsx(x3, fn, overwrite=T)
 
-###
-## twas_gene <- unique(x3$SYMBOL)
-## DEG <- resDiff2%>%pull(gene)%>%unique()
-## olap <- intersect(DEG, twas_gene)
+
 
 
 
@@ -216,13 +268,18 @@ dev.off()
 ### Barplot of number of TWAS-gene overlap DEG for each cell type ###
 #####################################################################
 
+
 gene_comb <- openxlsx::read.xlsx("./1_TWAS.outs/1_TWAS_traits.xlsx") 
 trait_DF <- openxlsx::read.xlsx("./1_TWAS.outs/traits.xlsx")%>%dplyr::select(traits, Relevant)
 gene_comb2 <- gene_comb%>%left_join(trait_DF, by="traits")%>%filter(Relevant==1)
 gene_comb2 <- gene_comb2%>%dplyr::select(-Relevant)%>%filter(!category%in%c("ADHD", "parkinson"))
-twas_gene <- unique(gene_comb2$SYMBOL)
+x1 <- unique(gene_comb2$SYMBOL)
+x2 <- unique(read.xlsx("TWAS_SUD_nmh_sig.xlsx")$SYMBOL)
+x3 <- unique(read.xlsx("TWAS_SUD_nmh_PsychENCODE_sig.xlsx")$SYMBOL)
 
-###
+twas_gene <- intersect(c(x1, x2, x3), geneall)
+
+### 
 ###
 celltype2 <- sort(unique(resDiff2$celltype))
 plotDF <- NULL
@@ -238,7 +295,7 @@ plotDF2 <- plotDF%>%
     MCl2=fct_reorder(celltype, MCl_value))
 
 ###
-### barplots
+### barplots 
 plotDF2 <- plotDF2%>%filter(!celltype%in%c("Union", "Old_Bulk"))
 p <- ggplot(plotDF2, aes(x=nolap, y=MCl2, fill=MCl2))+
     geom_bar(stat="identity")+
@@ -255,10 +312,6 @@ figfn <- paste(outdir, "Figure2_olap_barplot.png", sep="")
 png(figfn, width=450, height=500, res=120)
 print(p)
 dev.off()
-
-
-
-
 
 
 

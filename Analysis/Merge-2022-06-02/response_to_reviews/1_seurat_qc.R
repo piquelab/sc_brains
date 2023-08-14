@@ -185,6 +185,12 @@ for (i in 1:4){
 }
 
 
+figfn <- paste(outdir, "Figure1_qc_comb.png", sep="")
+png(figfn, width=1150, height=1150, res=120)
+plot_grid(plotlist=figs_ls, nrow=6, ncol=4)
+dev.off()
+
+
 
 
 
@@ -222,7 +228,7 @@ for (i in 1:4){
     ##
     figs_ls[[nn]] <- p0
 }
-
+ 
 ## figfn <- paste(outdir, "Figure1.2_qc_comb.png", sep="")
 ## png(figfn, width=1000, height=300, res=120)
 ## plot_grid(plotlist=figs_ls,  ncol=4)
@@ -314,7 +320,7 @@ write_rds(x2, opfn)
 
 
 ### histogram distribution
-x2 <- read_rds("./2_seurat.outs/response_to_reviews/1.1_meta_match.rds")
+x2 <- read_rds("../2_seurat.outs/response_to_reviews/1.1_meta_match.rds")
 
 p1 <- ggplot(x2, aes(x=percent.mt))+
    geom_histogram(color="grey", fill=NA)+
